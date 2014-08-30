@@ -9,13 +9,13 @@
     "resources": {
         "media": [
             {
-                "file": "images/arrow_right_8x14.png",
-                "name": "IMG_ARROW_RIGHT_8X14",
+                "file": "images/arrow_right_black_8x14.png",
+                "name": "IMG_ARROW_RIGHT_BLACK_8X14",
                 "type": "png"
             },
             {
-                "file": "images/arrow_left_8x14.png",
-                "name": "IMG_ARROW_LEFT_8X14",
+                "file": "images/icon-clock-white-22x25.png",
+                "name": "IMG_CLOCK_WHITE_22X25",
                 "type": "png"
             },
             {
@@ -24,8 +24,13 @@
                 "type": "png"
             },
             {
-                "file": "images/icon-clock-white-22x25.png",
-                "name": "IMG_CLOCK_WHITE_22X25",
+                "file": "images/arrow_left_8x14.png",
+                "name": "IMG_ARROW_LEFT_8X14",
+                "type": "png"
+            },
+            {
+                "file": "images/arrow_right_8x14.png",
+                "name": "IMG_ARROW_RIGHT_8X14",
                 "type": "png"
             }
         ]

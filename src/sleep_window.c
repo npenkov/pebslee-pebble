@@ -25,6 +25,7 @@ static GFont s_res_roboto_condensed_21;
 static GBitmap *s_res_img_empty_22x25;
 static GBitmap *s_res_img_arrow_right_8x14;
 static GBitmap *s_res_img_arrow_left_8x14;
+static GBitmap *s_res_img_arrow_right_black_8x14;
 static TextLayer *s_tl_time;
 static TextLayer *s_tl_date;
 static TextLayer *s_tl_status;
@@ -34,6 +35,7 @@ static BitmapLayer *s_bm_clock;
 static BitmapLayer *s_bm_up_right;
 static BitmapLayer *s_bm_down_right;
 static BitmapLayer *s_bm_back_left;
+static BitmapLayer *s_bm_arrow_right_select;
 
 static void initialise_ui(void) {
   s_window = window_create();
@@ -45,8 +47,9 @@ static void initialise_ui(void) {
   s_res_img_empty_22x25 = gbitmap_create_with_resource(RESOURCE_ID_IMG_EMPTY_22X25);
   s_res_img_arrow_right_8x14 = gbitmap_create_with_resource(RESOURCE_ID_IMG_ARROW_RIGHT_8X14);
   s_res_img_arrow_left_8x14 = gbitmap_create_with_resource(RESOURCE_ID_IMG_ARROW_LEFT_8X14);
+  s_res_img_arrow_right_black_8x14 = gbitmap_create_with_resource(RESOURCE_ID_IMG_ARROW_RIGHT_BLACK_8X14);
   // s_tl_time
-  s_tl_time = text_layer_create(GRect(-2, 49, 147, 52));
+  s_tl_time = text_layer_create(GRect(0, 49, 144, 52));
   text_layer_set_text(s_tl_time, "00:00");
   text_layer_set_text_alignment(s_tl_time, GTextAlignmentCenter);
   text_layer_set_font(s_tl_time, s_res_bitham_42_bold);
@@ -105,6 +108,11 @@ static void initialise_ui(void) {
   s_bm_back_left = bitmap_layer_create(GRect(2, 30, 8, 14));
   bitmap_layer_set_bitmap(s_bm_back_left, s_res_img_arrow_left_8x14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_back_left);
+  
+  // s_bm_arrow_right_select
+  s_bm_arrow_right_select = bitmap_layer_create(GRect(135, 69, 8, 12));
+  bitmap_layer_set_bitmap(s_bm_arrow_right_select, s_res_img_arrow_right_black_8x14);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_arrow_right_select);
 }
 
 static void destroy_ui(void) {
@@ -118,9 +126,11 @@ static void destroy_ui(void) {
   bitmap_layer_destroy(s_bm_up_right);
   bitmap_layer_destroy(s_bm_down_right);
   bitmap_layer_destroy(s_bm_back_left);
+  bitmap_layer_destroy(s_bm_arrow_right_select);
   gbitmap_destroy(s_res_img_empty_22x25);
   gbitmap_destroy(s_res_img_arrow_right_8x14);
   gbitmap_destroy(s_res_img_arrow_left_8x14);
+  gbitmap_destroy(s_res_img_arrow_right_black_8x14);
 }
 // END AUTO-GENERATED UI CODE
 
