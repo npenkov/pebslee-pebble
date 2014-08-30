@@ -9,6 +9,16 @@
     "resources": {
         "media": [
             {
+                "file": "images/arrow_down_black_8x14.png",
+                "name": "IMG_DOWN_ARROW_BLACK_8X14",
+                "type": "png"
+            },
+            {
+                "file": "images/arrow_up_black_8x14.png",
+                "name": "IMG_UP_ARROW_BLACK_8X14",
+                "type": "png"
+            },
+            {
                 "file": "images/arrow_right_black_8x14.png",
                 "name": "IMG_ARROW_RIGHT_BLACK_8X14",
                 "type": "png"
