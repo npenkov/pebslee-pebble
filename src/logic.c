@@ -10,9 +10,9 @@ void notify_status_update(int a_status) {
 }
 
 void notify_mode_update(int a_mode) {
-  if (a_mode == MODE_WORKDAY) {
-    vibes_short_pulse();    
-  } else if (a_mode == MODE_WEEKEND) {
-    vibes_double_pulse();  
-  }
+  // if (a_mode == MODE_WORKDAY) {
+  //   vibes_short_pulse();    
+  // } else if (a_mode == MODE_WEEKEND) {
+  //   vibes_double_pulse();  
+  // }
 }
