@@ -12,6 +12,8 @@
 #define NO 0  
 #define YES 1
 
+#define CONFIG_PERSISTENT_KEY 0
+
 typedef struct {
     int mode;
     int status;
@@ -32,6 +34,9 @@ void set_config_mode(int a_mode);
 void set_config_status(int a_status);
 void set_config_start_time(uint8_t a_hour, uint8_t a_min);
 void set_config_end_time(uint8_t a_hour, uint8_t a_min);
+
+void persist_write_config();
+void persist_read_config();
 
 void increase_start_hour();
 void increase_start_min();

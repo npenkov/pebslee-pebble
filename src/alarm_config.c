@@ -228,6 +228,28 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
     }
 }
 
+static void update_end_time_if_necessery() {
+    uint8_t starth = get_config()->start_wake_hour;
+    uint8_t startm = get_config()->start_wake_min;
+    uint8_t endh = get_config()->end_wake_hour;
+    uint8_t endm = get_config()->end_wake_min;
+    
+    if (starth > endh) {
+        endh = starth;
+        endm = startm + 1;
+        set_config_end_time(endh, endm);
+        set_number(s_end_hour, get_config()->end_wake_hour);
+        set_number(s_end_min, get_config()->end_wake_min);
+    } else {
+        if (startm > endm) {
+            endm = startm + 1;
+            set_config_end_time(endh, endm);
+            set_number(s_end_min, get_config()->end_wake_min);
+        }
+    }
+    
+}
+
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
     if (current_selection == START_HOUR_SELECTED) {
         current_selection = START_MIN_SELECTED;
@@ -235,6 +257,9 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
         set_layer_white_text(s_start_min);
     } else if (current_selection == START_MIN_SELECTED) {
         current_selection = END_HOUR_SELECTED;
+        
+        update_end_time_if_necessery();
+        
         set_layer_black_text(s_start_min);
         set_layer_white_text(s_end_hour);
     } else if (current_selection == END_HOUR_SELECTED) {

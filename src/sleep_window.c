@@ -200,6 +200,7 @@ static void handle_window_unload(Window* window) {
 }
 
 static void handle_window_appear(Window* window) {
+    persist_write_config();
     update_mode();
 }
 
@@ -248,6 +249,7 @@ static void config_provider(void *context) {
 
 void show_sleep_window(void) {
     s_res_img_clock_white_22x25 = gbitmap_create_with_resource(RESOURCE_ID_IMG_CLOCK_WHITE_22X25);
+    persist_read_config();
     initialise_ui();
     
     window_set_window_handlers(s_window, (WindowHandlers) {

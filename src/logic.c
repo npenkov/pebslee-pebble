@@ -10,11 +10,9 @@ GlobalConfig *get_config() {
 void set_config_mode(int a_mode) {
     config.mode = a_mode;
 }
-
 void set_config_status(int a_status) {
     config.status = a_status;
 }
-
 void set_config_start_time(uint8_t a_hour, uint8_t a_min) {
     config.start_wake_hour = a_hour;
     config.start_wake_min = a_min;
@@ -24,6 +22,13 @@ void set_config_end_time(uint8_t a_hour, uint8_t a_min) {
     config.end_wake_min = a_min;
 }
 
+void persist_write_config() {
+    persist_write_data(CONFIG_PERSISTENT_KEY, &config, sizeof(config));
+}
+void persist_read_config() {
+    persist_read_data(CONFIG_PERSISTENT_KEY, &config, sizeof(config));
+}
+
 void increase_start_hour() {
     if (config.start_wake_hour == 23) {
         config.start_wake_hour = 0;
@@ -31,7 +36,6 @@ void increase_start_hour() {
         config.start_wake_hour = config.start_wake_hour + 1;
     }
 }
-
 void increase_start_min() {
     if (config.start_wake_min == 59) {
         config.start_wake_min = 0;
@@ -47,7 +51,6 @@ void increase_end_hour() {
         config.end_wake_hour = config.end_wake_hour + 1;
     }
 }
-
 void increase_end_min() {
     if (config.end_wake_min == 59) {
         config.end_wake_min = 0;
@@ -64,7 +67,6 @@ void decrease_start_hour() {
         config.start_wake_hour = config.start_wake_hour - 1;
     }
 }
-
 void decrease_start_min() {
     if (config.start_wake_min == 0) {
         config.start_wake_min = 59;
@@ -80,7 +82,6 @@ void decrease_end_hour() {
         config.end_wake_hour = config.end_wake_hour - 1;
     }
 }
-
 void decrease_end_min() {
     if (config.end_wake_min == 0) {
         config.end_wake_min = 59;
