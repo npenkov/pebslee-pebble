@@ -104,6 +104,7 @@ static void initialise_ui(void) {
     // s_bm_arrow_right_select
     s_bm_arrow_right_select = bitmap_layer_create(GRect(135, 69, 8, 12));
     bitmap_layer_set_bitmap(s_bm_arrow_right_select, s_res_img_arrow_right_black_8x14);
+    bitmap_layer_set_background_color(s_bm_arrow_right_select, GColorWhite);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_arrow_right_select);
 }
 
@@ -202,11 +203,11 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     update_time();
 }
 
-void sw_up_long_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void sw_up_long_click_handler(ClickRecognizerRef recognizer, void *context) {
     // Here we can show a window with allowed fuctions or just a status
 }
 
-void sw_up_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
+static void sw_up_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
     if (mode == MODE_WEEKEND) {
         mode = MODE_WORKDAY;
     } else {
@@ -216,15 +217,15 @@ void sw_up_long_click_release_handler(ClickRecognizerRef recognizer, void *conte
     update_mode();
 }
 
-void sw_select_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void sw_select_click_handler(ClickRecognizerRef recognizer, void *context) {
     show_alarm_config();
 }
 
-void sw_down_long_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void sw_down_long_click_handler(ClickRecognizerRef recognizer, void *context) {
     // Here we can show a window with allowed fuctions or just a status
 }
 
-void sw_down_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
+static void sw_down_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
     if (status == STATUS_ACTIVE) {
         status = STATUS_NOTACTIVE;
     } else {
@@ -235,7 +236,7 @@ void sw_down_long_click_release_handler(ClickRecognizerRef recognizer, void *con
 }
 
 
-void sw_config_provider(void *context) {
+static void sw_config_provider(void *context) {
     window_long_click_subscribe(BUTTON_ID_UP, 700, sw_up_long_click_handler, sw_up_long_click_release_handler);
     window_single_click_subscribe(BUTTON_ID_SELECT, sw_select_click_handler);
     window_long_click_subscribe(BUTTON_ID_DOWN, 700, sw_down_long_click_handler, sw_down_long_click_release_handler);

@@ -143,6 +143,17 @@ static void handle_window_unload(Window* window) {
     destroy_ui();
 }
 
+static void set_layer_white_text(TextLayer *a_text_layer) {
+    text_layer_set_text_color(a_text_layer, GColorWhite);
+    text_layer_set_background_color(a_text_layer, GColorBlack);
+}
+
+static void set_layer_black_text(TextLayer *a_text_layer) {
+    text_layer_set_text_color(a_text_layer, GColorBlack);
+    text_layer_set_background_color(a_text_layer, GColorClear);
+}
+
+
 static void update_ui() {
     static char buffer[] = "00";
     snprintf(buffer, 2, "%02d", start_wake_hour);
@@ -158,104 +169,103 @@ static void update_ui() {
     text_layer_set_text(s_end_min, buffer);
     
     if (current_selection == START_HOUR_SELECTED) {
-        text_layer_set_text_color(s_start_hour, GColorWhite);
-        text_layer_set_background_color(s_start_hour, GColorBlack);
-        
-        text_layer_set_text_color(s_start_min, GColorBlack);
-        text_layer_set_background_color(s_start_min, GColorClear);
-        
-        text_layer_set_text_color(s_end_hour, GColorBlack);
-        text_layer_set_background_color(s_end_hour, GColorClear);
-        
-        text_layer_set_text_color(s_end_min, GColorBlack);
-        text_layer_set_background_color(s_end_min, GColorClear);
+        set_layer_white_text(s_start_hour);
+        set_layer_black_text(s_start_min);
+        set_layer_black_text(s_end_hour);
+        set_layer_black_text(s_end_min);
     } else if (current_selection == START_MIN_SELECTED) {
-        text_layer_set_text_color(s_start_hour, GColorBlack);
-        text_layer_set_background_color(s_start_hour, GColorClear);
-        
-        text_layer_set_text_color(s_start_min, GColorWhite);
-        text_layer_set_background_color(s_start_min, GColorBlack);
-        
-        text_layer_set_text_color(s_end_hour, GColorBlack);
-        text_layer_set_background_color(s_end_hour, GColorClear);
-        
-        text_layer_set_text_color(s_end_min, GColorBlack);
-        text_layer_set_background_color(s_end_min, GColorClear);
+        set_layer_black_text(s_start_hour);
+        set_layer_white_text(s_start_min);
+        set_layer_black_text(s_end_hour);
+        set_layer_black_text(s_end_min);
     } else if (current_selection == END_HOUR_SELECTED) {
-        text_layer_set_text_color(s_start_hour, GColorBlack);
-        text_layer_set_background_color(s_start_hour, GColorClear);
-        
-        text_layer_set_text_color(s_start_min, GColorBlack);
-        text_layer_set_background_color(s_start_min, GColorClear);
-        
-        text_layer_set_text_color(s_end_hour, GColorWhite);
-        text_layer_set_background_color(s_end_hour, GColorBlack);
-        
-        text_layer_set_text_color(s_end_min, GColorBlack);
-        text_layer_set_background_color(s_end_min, GColorClear);
+        set_layer_black_text(s_start_hour);
+        set_layer_black_text(s_start_min);
+        set_layer_white_text(s_end_hour);
+        set_layer_black_text(s_end_min);
     } else if (current_selection == END_MIN_SELECTED) {
-        text_layer_set_text_color(s_start_hour, GColorBlack);
-        text_layer_set_background_color(s_start_hour, GColorClear);
-        
-        text_layer_set_text_color(s_start_min, GColorBlack);
-        text_layer_set_background_color(s_start_min, GColorClear);
-        
-        text_layer_set_text_color(s_end_hour, GColorBlack);
-        text_layer_set_background_color(s_end_hour, GColorClear);
-        
-        text_layer_set_text_color(s_end_min, GColorWhite);
-        text_layer_set_background_color(s_end_min, GColorBlack);
+        set_layer_black_text(s_start_hour);
+        set_layer_black_text(s_start_min);
+        set_layer_black_text(s_end_hour);
+        set_layer_white_text(s_end_min);
     } else {
-        text_layer_set_text_color(s_start_hour, GColorBlack);
-        text_layer_set_background_color(s_start_hour, GColorClear);
-        
-        text_layer_set_text_color(s_start_min, GColorBlack);
-        text_layer_set_background_color(s_start_min, GColorClear);
-        
-        text_layer_set_text_color(s_end_hour, GColorBlack);
-        text_layer_set_background_color(s_end_hour, GColorClear);
-        
-        text_layer_set_text_color(s_end_min, GColorBlack);
-        text_layer_set_background_color(s_end_min, GColorClear);
+        set_layer_black_text(s_start_hour);
+        set_layer_black_text(s_start_min);
+        set_layer_black_text(s_end_hour);
+        set_layer_black_text(s_end_min);
     }
 }
 
-void ac_up_click_handler(ClickRecognizerRef recognizer, void *context) {
-    
+static void ac_up_click_handler(ClickRecognizerRef recognizer, void *context) {
+    if (current_selection == START_HOUR_SELECTED) {
+        if (start_wake_hour == 0)
+            start_wake_hour = 23;
+        else
+            start_wake_hour -= 1;
+    } else if (current_selection == START_MIN_SELECTED) {
+        if (start_wake_min == 0)
+            start_wake_min = 59;
+        else
+            start_wake_min -= 1;
+    } else if (current_selection == END_HOUR_SELECTED) {
+        if (end_wake_hour == 0)
+            end_wake_hour = 23;
+        else
+            end_wake_hour -= 1;
+    } else if (current_selection == END_MIN_SELECTED) {
+        if (end_wake_min == 0)
+            end_wake_min = 59;
+        else
+            end_wake_min -= 1;
+    }
+    update_ui();
 }
 
-void ac_down_click_handler(ClickRecognizerRef recognizer, void *context) {
-    
+static void ac_down_click_handler(ClickRecognizerRef recognizer, void *context) {
+    if (current_selection == START_HOUR_SELECTED) {
+        if (start_wake_hour == 23)
+            start_wake_hour = 0;
+        else
+            start_wake_hour += 1;
+    } else if (current_selection == START_MIN_SELECTED) {
+        if (start_wake_min == 59)
+            start_wake_min = 0;
+        else
+            start_wake_min += 1;
+    } else if (current_selection == END_HOUR_SELECTED) {
+        if (end_wake_hour == 23)
+            end_wake_hour = 0;
+        else
+            end_wake_hour += 1;
+    } else if (current_selection == END_MIN_SELECTED) {
+        if (end_wake_min == 59)
+            end_wake_min = 0;
+        else
+            end_wake_min += 1;
+    }
+    update_ui();
 }
 
-void ac_select_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void ac_select_click_handler(ClickRecognizerRef recognizer, void *context) {
     if (current_selection == START_HOUR_SELECTED) {
         current_selection = START_MIN_SELECTED;
-        update_ui();
     } else if (current_selection == START_MIN_SELECTED) {
         current_selection = END_HOUR_SELECTED;
-        update_ui();
     } else if (current_selection == END_HOUR_SELECTED) {
         current_selection = END_MIN_SELECTED;
-        update_ui();
     } else if (current_selection == END_MIN_SELECTED) {
         current_selection = NONE_SELECTED;
-        update_ui();
     } else {
         current_selection = START_HOUR_SELECTED;
-        update_ui();
     }
-        
+    update_ui();
 }
 
-void ac_back_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void ac_back_click_handler(ClickRecognizerRef recognizer, void *context) {
     window_stack_remove(s_window, true);
 }
 
-
-
-
-void ac_config_provider(void *context) {
+static void ac_config_provider(void *context) {
     window_single_click_subscribe(BUTTON_ID_UP, ac_up_click_handler);
     window_single_click_subscribe(BUTTON_ID_SELECT, ac_select_click_handler);
     window_single_click_subscribe(BUTTON_ID_DOWN, ac_down_click_handler);
@@ -268,6 +278,7 @@ void show_alarm_config(void) {
         .unload = handle_window_unload,
     });
     window_set_click_config_provider(s_window, ac_config_provider);
+    update_ui();
     window_stack_push(s_window, true);
 }
 
