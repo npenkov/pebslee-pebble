@@ -1,5 +1,5 @@
-#include "sleep_window.h"
 #include <pebble.h>
+#include "sleep_window.h"
 #include "logic.h"
 #include "language.h"
 #include "alarm_config.h"
@@ -129,23 +129,23 @@ static void destroy_ui(void) {
 
 // *********************** Update UI fuctions *********************
 static void update_mode() {
-    if (mode == MODE_WEEKEND) {
+    if (get_config()->mode == MODE_WEEKEND) {
         text_layer_set_text(s_tl_mode, MODE_WEEKEND_STR);
         bitmap_layer_set_bitmap(s_bm_clock, s_res_img_empty_22x25);
         text_layer_set_text(s_textlayer_1, "");
-    } else if (mode == MODE_WORKDAY) {
+    } else if (get_config()->mode == MODE_WORKDAY) {
         text_layer_set_text(s_tl_mode, MODE_WORKDAY_STR);
         bitmap_layer_set_bitmap(s_bm_clock, s_res_img_clock_white_22x25);
         static char buffer[] = "00:00 - 00:00";
-        snprintf(buffer, sizeof(buffer), "%02d:%02d - %02d:%02d", start_wake_hour, start_wake_min, end_wake_hour, end_wake_min);
+        snprintf(buffer, sizeof(buffer), "%02d:%02d - %02d:%02d", get_config()->start_wake_hour, get_config()->start_wake_min, get_config()->end_wake_hour, get_config()->end_wake_min);
         text_layer_set_text(s_textlayer_1, buffer);
     }
 }
 
 static void update_status() {
-    if (status == STATUS_ACTIVE) {
+    if (get_config()->status == STATUS_ACTIVE) {
         text_layer_set_text(s_tl_status, STATUS_ACTIVE_STR);
-    } else if (status == STATUS_NOTACTIVE) {
+    } else if (get_config()->status == STATUS_NOTACTIVE) {
         text_layer_set_text(s_tl_status, STATUS_NOTACTIVE_STR);
     }
 }
@@ -188,9 +188,9 @@ static void calculate_mode() {
     if ((tick_time->tm_wday == 5 && tick_time->tm_hour >= 13) ||   // Friday evening
         (tick_time->tm_wday == 6 && tick_time->tm_hour >= 13) ||   // Saturday
         (tick_time->tm_wday == 0 && tick_time->tm_hour <= 12))     // Sunday morning
-        mode = MODE_WEEKEND;
+        set_config_mode(MODE_WEEKEND);
     else
-        mode = MODE_WORKDAY;
+        set_config_mode(MODE_WORKDAY);
 }
 
 
@@ -199,47 +199,51 @@ static void handle_window_unload(Window* window) {
     destroy_ui();
 }
 
+static void handle_window_appear(Window* window) {
+    update_mode();
+}
+
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     update_time();
 }
 
-static void sw_up_long_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void up_long_click_handler(ClickRecognizerRef recognizer, void *context) {
     // Here we can show a window with allowed fuctions or just a status
 }
 
-static void sw_up_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
-    if (mode == MODE_WEEKEND) {
-        mode = MODE_WORKDAY;
+static void up_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
+    if (get_config()->mode == MODE_WEEKEND) {
+        set_config_mode(MODE_WORKDAY);
     } else {
-        mode = MODE_WEEKEND;
+        set_config_mode(MODE_WEEKEND);
     }
-    notify_mode_update(mode);
+    notify_mode_update(get_config()->mode);
     update_mode();
 }
 
-static void sw_select_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
     show_alarm_config();
 }
 
-static void sw_down_long_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void down_long_click_handler(ClickRecognizerRef recognizer, void *context) {
     // Here we can show a window with allowed fuctions or just a status
 }
 
-static void sw_down_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
-    if (status == STATUS_ACTIVE) {
-        status = STATUS_NOTACTIVE;
+static void down_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
+    if (get_config()->status == STATUS_ACTIVE) {
+        set_config_status(STATUS_NOTACTIVE);
     } else {
-        status = STATUS_ACTIVE;
+        set_config_status(STATUS_ACTIVE);
     }
-    notify_status_update(status);
+    notify_status_update(get_config()->status);
     update_status();
 }
 
 
-static void sw_config_provider(void *context) {
-    window_long_click_subscribe(BUTTON_ID_UP, 700, sw_up_long_click_handler, sw_up_long_click_release_handler);
-    window_single_click_subscribe(BUTTON_ID_SELECT, sw_select_click_handler);
-    window_long_click_subscribe(BUTTON_ID_DOWN, 700, sw_down_long_click_handler, sw_down_long_click_release_handler);
+static void config_provider(void *context) {
+    window_long_click_subscribe(BUTTON_ID_UP, 700, up_long_click_handler, up_long_click_release_handler);
+    window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+    window_long_click_subscribe(BUTTON_ID_DOWN, 700, down_long_click_handler, down_long_click_release_handler);
 }
 
 void show_sleep_window(void) {
@@ -248,6 +252,7 @@ void show_sleep_window(void) {
     
     window_set_window_handlers(s_window, (WindowHandlers) {
         .unload = handle_window_unload,
+        .appear = handle_window_appear
     });
     window_stack_push(s_window, true);
     if (forceUpdateDate) {
@@ -256,7 +261,7 @@ void show_sleep_window(void) {
     update_mode();
     update_time();
     tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
-    window_set_click_config_provider(s_window, sw_config_provider);
+    window_set_click_config_provider(s_window, config_provider);
 }
 
 void hide_sleep_window(void) {

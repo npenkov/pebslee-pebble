@@ -1,4 +1,5 @@
 #include "pebble.h"
+#include "logic.h"
 #include "sleep_window.h"
   
 static void handle_init(void) {
@@ -6,8 +7,9 @@ static void handle_init(void) {
 }
 
 static void handle_deinit(void) {
-  hide_sleep_window();
+    hide_sleep_window();
 }
+
 int main(void) {
 	handle_init();
 	app_event_loop();

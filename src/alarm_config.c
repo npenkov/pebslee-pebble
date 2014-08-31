@@ -1,5 +1,5 @@
-#include "alarm_config.h"
 #include <pebble.h>
+#include "alarm_config.h"
 #include "logic.h"
 
 #define NONE_SELECTED 0
@@ -153,20 +153,18 @@ static void set_layer_black_text(TextLayer *a_text_layer) {
     text_layer_set_background_color(a_text_layer, GColorClear);
 }
 
+static void set_number(TextLayer *a_text_layer, uint8_t number) {
+    char *buffer;
+    buffer = malloc(sizeof(char)*(2+1));
+    snprintf(buffer, sizeof(buffer), "%02d", number);
+    text_layer_set_text(a_text_layer, buffer);
+}
 
 static void update_ui() {
-    static char buffer[] = "00";
-    snprintf(buffer, 2, "%02d", start_wake_hour);
-    text_layer_set_text(s_start_hour, buffer);
-    
-    snprintf(buffer, 2, "%02d", start_wake_min);
-    text_layer_set_text(s_start_min, buffer);
-    
-    snprintf(buffer, 2, "%02d", end_wake_hour);
-    text_layer_set_text(s_end_hour, buffer);
-    
-    snprintf(buffer, 2, "%02d", end_wake_min);
-    text_layer_set_text(s_end_min, buffer);
+    set_number(s_start_hour, get_config()->start_wake_hour);
+    set_number(s_start_min, get_config()->start_wake_min);
+    set_number(s_end_hour, get_config()->end_wake_hour);
+    set_number(s_end_min, get_config()->end_wake_min);
     
     if (current_selection == START_HOUR_SELECTED) {
         set_layer_white_text(s_start_hour);
@@ -196,80 +194,71 @@ static void update_ui() {
     }
 }
 
-static void ac_up_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "up click handler: current selection: %d %d:%d %d:%d", current_selection, get_config()->start_wake_hour, get_config()->start_wake_min, get_config()->end_wake_hour, get_config()->end_wake_min);
     if (current_selection == START_HOUR_SELECTED) {
-        if (start_wake_hour == 0)
-            start_wake_hour = 23;
-        else
-            start_wake_hour -= 1;
+        increase_start_hour();
+        set_number(s_start_hour, get_config()->start_wake_hour);
     } else if (current_selection == START_MIN_SELECTED) {
-        if (start_wake_min == 0)
-            start_wake_min = 59;
-        else
-            start_wake_min -= 1;
+        increase_start_min();
+        set_number(s_start_min, get_config()->start_wake_min);
     } else if (current_selection == END_HOUR_SELECTED) {
-        if (end_wake_hour == 0)
-            end_wake_hour = 23;
-        else
-            end_wake_hour -= 1;
+        increase_end_hour();
+        set_number(s_end_hour, get_config()->end_wake_hour);
     } else if (current_selection == END_MIN_SELECTED) {
-        if (end_wake_min == 0)
-            end_wake_min = 59;
-        else
-            end_wake_min -= 1;
+        increase_end_min();
+        set_number(s_end_min, get_config()->end_wake_min);
     }
-    update_ui();
 }
 
-static void ac_down_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "down click handler: current selection: %d %d:%d %d:%d", current_selection, get_config()->start_wake_hour, get_config()->start_wake_min, get_config()->end_wake_hour, get_config()->end_wake_min);
     if (current_selection == START_HOUR_SELECTED) {
-        if (start_wake_hour == 23)
-            start_wake_hour = 0;
-        else
-            start_wake_hour += 1;
+        decrease_start_hour();
+        set_number(s_start_hour, get_config()->start_wake_hour);
     } else if (current_selection == START_MIN_SELECTED) {
-        if (start_wake_min == 59)
-            start_wake_min = 0;
-        else
-            start_wake_min += 1;
+        decrease_start_min();
+        set_number(s_start_min, get_config()->start_wake_min);
     } else if (current_selection == END_HOUR_SELECTED) {
-        if (end_wake_hour == 23)
-            end_wake_hour = 0;
-        else
-            end_wake_hour += 1;
+        decrease_end_hour();
+        set_number(s_end_hour, get_config()->end_wake_hour);
     } else if (current_selection == END_MIN_SELECTED) {
-        if (end_wake_min == 59)
-            end_wake_min = 0;
-        else
-            end_wake_min += 1;
+        decrease_end_min();
+        set_number(s_end_min, get_config()->end_wake_min);
     }
-    update_ui();
 }
 
-static void ac_select_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
     if (current_selection == START_HOUR_SELECTED) {
         current_selection = START_MIN_SELECTED;
+        set_layer_black_text(s_start_hour);
+        set_layer_white_text(s_start_min);
     } else if (current_selection == START_MIN_SELECTED) {
         current_selection = END_HOUR_SELECTED;
+        set_layer_black_text(s_start_min);
+        set_layer_white_text(s_end_hour);
     } else if (current_selection == END_HOUR_SELECTED) {
         current_selection = END_MIN_SELECTED;
+        set_layer_black_text(s_end_hour);
+        set_layer_white_text(s_end_min);
     } else if (current_selection == END_MIN_SELECTED) {
         current_selection = NONE_SELECTED;
+        set_layer_black_text(s_end_min);
     } else {
         current_selection = START_HOUR_SELECTED;
+        set_layer_white_text(s_start_hour);
     }
-    update_ui();
 }
 
-static void ac_back_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
     window_stack_remove(s_window, true);
 }
 
-static void ac_config_provider(void *context) {
-    window_single_click_subscribe(BUTTON_ID_UP, ac_up_click_handler);
-    window_single_click_subscribe(BUTTON_ID_SELECT, ac_select_click_handler);
-    window_single_click_subscribe(BUTTON_ID_DOWN, ac_down_click_handler);
-    window_single_click_subscribe(BUTTON_ID_BACK, ac_back_click_handler);
+static void config_provider(void *context) {
+    window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
+    window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+    window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
+    window_single_click_subscribe(BUTTON_ID_BACK, back_click_handler);
 }
 
 void show_alarm_config(void) {
@@ -277,7 +266,7 @@ void show_alarm_config(void) {
     window_set_window_handlers(s_window, (WindowHandlers) {
         .unload = handle_window_unload,
     });
-    window_set_click_config_provider(s_window, ac_config_provider);
+    window_set_click_config_provider(s_window, config_provider);
     update_ui();
     window_stack_push(s_window, true);
 }
