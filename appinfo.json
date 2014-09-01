@@ -42,6 +42,12 @@
                 "file": "images/arrow_right_8x14.png",
                 "name": "IMG_ARROW_RIGHT_8X14",
                 "type": "png"
+            },
+            {
+                "menuIcon": true,
+                "type": "png",
+                "name": "IMAGE_ICON",
+                "file": "images/icon.png"
             }
         ]
     },
