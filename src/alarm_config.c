@@ -195,7 +195,6 @@ static void update_ui() {
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "up click handler: current selection: %d %d:%d %d:%d", current_selection, get_config()->start_wake_hour, get_config()->start_wake_min, get_config()->end_wake_hour, get_config()->end_wake_min);
     if (current_selection == START_HOUR_SELECTED) {
         increase_start_hour();
         set_number(s_start_hour, get_config()->start_wake_hour);
@@ -212,7 +211,6 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "down click handler: current selection: %d %d:%d %d:%d", current_selection, get_config()->start_wake_hour, get_config()->start_wake_min, get_config()->end_wake_hour, get_config()->end_wake_min);
     if (current_selection == START_HOUR_SELECTED) {
         decrease_start_hour();
         set_number(s_start_hour, get_config()->start_wake_hour);

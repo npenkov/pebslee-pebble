@@ -3,12 +3,18 @@
 #include "sleep_window.h"
   
 static void handle_init(void) {
+    accel_data_service_subscribe(0, NULL);
 	show_sleep_window();
 }
 
 static void handle_deinit(void) {
+    accel_data_service_unsubscribe();
     hide_sleep_window();
-    stop_services();
+    
+    if (get_config()->status == STATUS_ACTIVE) {
+        set_config_status(STATUS_NOTACTIVE);
+        notify_status_update(get_config()->status);
+    }
 }
 
 int main(void) {

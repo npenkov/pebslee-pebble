@@ -2,9 +2,16 @@
 #include "logic.h"
 
 static GlobalConfig config;
-static uint32_t motion_peek_in_min;
-static bool motion_active = NO;
-static bool app_active = NO;
+static uint16_t motion_peek_in_min = 0;
+static int app_active = NO;
+static int16_t last_x = 0;
+static int16_t last_y = 0;
+static int16_t last_z = 0;
+
+const int ACCEL_STEP_MS = 2000;
+const int DELTA = 43;
+
+static AppTimer *timer;
 
 GlobalConfig *get_config() {
 	return &config;
@@ -98,75 +105,58 @@ static void memo_motion(uint16_t peek) {
     if (peek > motion_peek_in_min) motion_peek_in_min = peek;
 }
 
-/*
- * Acceleration data comes in range -4000 <-> 4000 - so make it only with natural numbers
- */
-static uint16_t naturalize_motion_value(int16_t val) {
-	int16_t result = 4000 + val;
-	if (result < 0)
-		result = 0;
-	return result;
-}
-
-/*
- * Babylonian method of square root
- */
-static float sqrtBabylon(const float m)
-{
-    float i=0;
-    float x1,x2;
-    while( (i*i) <= m )
-        i+=0.1f;
-    x1=i;
-    for(int j=0;j<10;j++)
-    {
-        x2=m;
-        x2/=x1;
-        x2+=x1;
-        x2/=2;
-        x1=x2;
-    }
-    return x2;
-}
 
 /*
  * Process motion data, and take the peeks of body motion
  */
-static void motion_data_handler(AccelData *data, uint32_t num_samples) {
+static void motion_timer_callback(void *data) {
+	AccelData accel = (AccelData ) { .x = 0, .y = 0, .z = 0 };
+	accel_service_peek(&accel);
     
-    uint16_t biggestValue = 0;
-	AccelData *dt = data;
-	for (uint32_t i = 0; i < num_samples; i++, dt++) {
-        if (dt->did_vibrate) {
-            // We don't want to store vibration values
-            return;
-        }
-        uint32_t x = naturalize_motion_value(dt->x);
-        uint32_t y = naturalize_motion_value(dt->y);
-        uint32_t z = naturalize_motion_value(dt->z);
-        
-        float summed_squer = (float)(x * x + y * y + z * z);
-        uint32_t absValue = (unsigned int) sqrtBabylon(summed_squer);
-        if (absValue > biggestValue) biggestValue = absValue;
-	}
+    // Not interested in values from vibration
+    if (accel.did_vibrate)
+        return;
+    int16_t delta_x = 0;
+    int16_t delta_y = 0;
+    int16_t delta_z = 0;
     
-    memo_motion(biggestValue);
-}
-
-static void start_motion_listener() {
-    // Accelerometer
-    accel_data_service_subscribe(NUMBER_OF_SAMPLES_PER_BATCH, motion_data_handler);
-    accel_service_set_sampling_rate(ACCEL_SAMPLING_10HZ);
-    motion_active = YES;
+    if (abs(abs(accel.x) - abs(last_x)) > DELTA){
+        delta_x = abs(abs(accel.x) - abs(last_x));
+    } else {
+        delta_x = 0;
+    }
+    
+    if (abs(abs(accel.y) - abs(last_y)) > DELTA){
+        delta_y = abs(abs(accel.y) - abs(last_y));
+    } else {
+        delta_y = 0;
+    }
+    
+    if (abs(abs(accel.z) - abs(last_z)) > DELTA){
+        delta_z = abs(abs(accel.z) - abs(last_z));
+    } else {
+        delta_z = 0;
+    }
+    uint16_t delta_value = (delta_x + delta_y + delta_z)/3;
+    
+//    APP_LOG(APP_LOG_LEVEL_DEBUG, "Motion vectors %u %d/%d/%d", delta_value, accel.x, accel.y, accel.z);
+    memo_motion(delta_value);
+    
+    last_x = accel.x;
+    last_y = accel.y;
+    last_z = accel.z;
+    
+	timer = app_timer_register(ACCEL_STEP_MS, motion_timer_callback, NULL);
 }
 
 static void check_alarm(struct tm *tick_time) {
     
 }
 
-
 static void persist_motion(struct tm *tick_time) {
-    
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist motion %u", motion_peek_in_min);
+    // TODO: Do persist the value
+    motion_peek_in_min = 0;
 }
 
 /*
@@ -183,23 +173,15 @@ void minute_timer_tick() {
     }
 }
 
-void notify_app_tracking_stopped() {
-    app_active = NO;
-    stop_services();
-}
-
-void notify_app_tracking_started() {
-    app_active = YES;
-    start_motion_listener();
-}
-
 void notify_status_update(int a_status) {
     if (a_status == STATUS_ACTIVE) {
         vibes_short_pulse();
-        notify_app_tracking_started();
+        start_motion_capturing();
+        app_active = YES;
     } else if (a_status == STATUS_NOTACTIVE) {
         vibes_double_pulse();
-        notify_app_tracking_stopped();
+        stop_motion_capturing();
+        app_active = NO;
     }
 }
 
@@ -211,10 +193,13 @@ void notify_mode_update(int a_mode) {
     // }
 }
 
-void stop_services() {
-    if (motion_active) {
-        accel_data_service_unsubscribe();
-        motion_active = NO;
-    }
+void start_motion_capturing() {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Start motion capturing");
+    motion_peek_in_min = 0;
+    timer = app_timer_register(ACCEL_STEP_MS, motion_timer_callback, NULL);
 }
 
+void stop_motion_capturing() {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Stop motion capturing");
+    app_timer_cancel(timer);
+}

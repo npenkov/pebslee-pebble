@@ -173,7 +173,7 @@ static void update_time() {
     text_layer_set_text(s_tl_time, buffer);
     // Update date only when it becomes 00:00
     if ((tick_time->tm_hour == 0 && tick_time->tm_min == 0) || forceUpdateDate ) {
-        strftime(bufferDate, sizeof("00:00"), "%a %d", tick_time);
+        strftime(bufferDate, sizeof(bufferDate), "%a %d", tick_time);
         text_layer_set_text(s_tl_date, bufferDate);
         forceUpdateDate = NO;
     }
@@ -209,6 +209,7 @@ static void handle_window_appear(Window* window) {
  */
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     update_time();
+    minute_timer_tick();
 }
 
 static void up_long_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -253,6 +254,8 @@ static void config_provider(void *context) {
 void show_sleep_window(void) {
     s_res_img_clock_white_22x25 = gbitmap_create_with_resource(RESOURCE_ID_IMG_CLOCK_WHITE_22X25);
     persist_read_config();
+    get_config()->status = STATUS_NOTACTIVE;
+    
     initialise_ui();
     
     window_set_window_handlers(s_window, (WindowHandlers) {
@@ -265,6 +268,7 @@ void show_sleep_window(void) {
     }
     update_mode();
     update_time();
+    update_status();
 
     // Change time every minute
     tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
