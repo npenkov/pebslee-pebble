@@ -14,6 +14,10 @@
 
 #define CONFIG_PERSISTENT_KEY 0
 
+// This is the number of samples that will be passed to calculation fuction at once
+// Every sample is made with rithm of ACCEL_SAMPLING_10HZ - every 1/10 of second
+#define NUMBER_OF_SAMPLES_PER_BATCH 20
+
 typedef struct {
     int mode;
     int status;
@@ -28,6 +32,9 @@ typedef struct {
 
 void notify_status_update(int a_status);
 void notify_mode_update(int a_mode);
+
+void notify_app_tracking_stopped();
+void notify_app_tracking_started();
 
 GlobalConfig *get_config();
 void set_config_mode(int a_mode);
@@ -47,5 +54,9 @@ void decrease_start_hour();
 void decrease_start_min();
 void decrease_end_hour();
 void decrease_end_min();
+
+void stop_services();
+
+void minute_timer_tick();
 
 #endif /* LOGIC_H_ */  

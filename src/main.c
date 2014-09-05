@@ -8,6 +8,7 @@ static void handle_init(void) {
 
 static void handle_deinit(void) {
     hide_sleep_window();
+    stop_services();
 }
 
 int main(void) {

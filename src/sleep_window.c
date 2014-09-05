@@ -204,6 +204,9 @@ static void handle_window_appear(Window* window) {
     update_mode();
 }
 
+/*
+ * This should be called every minute
+ */
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     update_time();
 }
@@ -262,6 +265,8 @@ void show_sleep_window(void) {
     }
     update_mode();
     update_time();
+
+    // Change time every minute
     tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
     window_set_click_config_provider(s_window, config_provider);
 }
