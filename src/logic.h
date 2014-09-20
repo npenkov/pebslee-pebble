@@ -36,6 +36,9 @@
 
 #define CONFIG_PERSISTENT_KEY 0
 
+// Store no more that 12 hours
+#define MAX_COUNT 720
+
 typedef struct {
     int mode;
     int status;
@@ -47,6 +50,22 @@ typedef struct {
     uint8_t end_wake_min;
 
 } GlobalConfig;
+
+typedef struct {
+    struct tm *start_time;
+    struct tm *end_time;
+    bool finished;
+    
+    uint8_t stat_deep_sleep_min;
+    uint8_t stat_light_sleep_min;
+    uint8_t stat_rem_sleep_min;
+    uint8_t stat_awake_min;
+    
+    uint16_t minutes_value[MAX_COUNT];
+    uint16_t count_values;
+    
+} SleepData;
+
 
 void notify_status_update(int a_status);
 void notify_mode_update(int a_mode);

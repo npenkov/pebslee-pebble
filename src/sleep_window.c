@@ -304,4 +304,8 @@ void hide_sleep_window(void) {
     window_stack_remove(s_window, true);
 }
 
-
+void refresh_display(void) {
+    update_mode();
+    update_time();
+    update_status();
+}

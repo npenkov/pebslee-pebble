@@ -22,8 +22,9 @@
 
 #include <pebble.h>
 #include "logic.h"
+#include "sleep_window.h"
 
-//#define DEBUG 1
+#define DEBUG 1
 
 static uint8_t vib_count;
 static bool alarm_in_motion = NO;
@@ -47,6 +48,8 @@ const int REM_SLEEP_THRESHOLD = 300;
 const int LIGHT_THRESHOLD = 600;
 
 const uint8_t LAST_MIN_WAKE = 2;
+
+static SleepData sleep_data;
 
 typedef enum {
     DEEP = 1,
@@ -87,6 +90,37 @@ void persist_write_config() {
 }
 void persist_read_config() {
     persist_read_data(CONFIG_PERSISTENT_KEY, &config, sizeof(config));
+}
+
+void start_sleep_data_capturing() {
+    time_t temp = time(NULL);
+    sleep_data.start_time = localtime(&temp);
+    sleep_data.finished = false;
+    
+    sleep_data.stat_deep_sleep_min = 0;
+    sleep_data.stat_light_sleep_min = 0;
+    sleep_data.stat_rem_sleep_min = 0;
+    sleep_data.stat_awake_min = 0;
+    
+    //uint8_t *minutes_value;
+    sleep_data.count_values = 0;
+}
+
+void stop_sleep_data_capturing() {
+    time_t temp = time(NULL);
+    sleep_data.end_time = localtime(&temp);
+    sleep_data.finished = true;
+    
+#ifdef DEBUG
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Stop capturing: ");
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Started:  %02d:%02d", sleep_data.start_time->tm_hour, sleep_data.start_time->tm_min);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Finished: %02d:%02d", sleep_data.end_time->tm_hour, sleep_data.end_time->tm_min);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Deep  sleep:  %d min", sleep_data.stat_deep_sleep_min);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "REM   sleep:  %d min", sleep_data.stat_rem_sleep_min);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Light sleep:  %d min", sleep_data.stat_light_sleep_min);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Awake sleep:  %d min", sleep_data.stat_awake_min);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Count values: %d", sleep_data.count_values);
+#endif
 }
 
 void increase_start_hour() {
@@ -206,12 +240,12 @@ static void motion_timer_callback(void *data) {
 	timer = app_timer_register(ACCEL_STEP_MS, motion_timer_callback, NULL);
 }
 
-static void reporting_timer_callback(void *data) {
 #ifdef DEBUG
+static void reporting_timer_callback(void *data) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Motion vectors %u %d/%d/%d current phase: %d", motion_peek_in_min, last_x, last_y, last_z, current_sleep_phase);
     timerRep = app_timer_register(REPORTING_STEP_MS, reporting_timer_callback, NULL);
-#endif
 }
+#endif
 
 /*
  * Alarm timer loop
@@ -247,6 +281,7 @@ void call_stop_alarm_if_running() {
     if (alarm_in_motion) {
         app_timer_cancel(alarm_timer);
         alarm_in_motion = NO;
+        refresh_display();
     }
 }
 
@@ -299,16 +334,27 @@ static void persist_motion(struct tm *tick_time) {
         if (motion_peek_in_min > REM_SLEEP_THRESHOLD) {
             if (motion_peek_in_min > LIGHT_THRESHOLD) {
                 current_sleep_phase = AWAKE;
+                sleep_data.stat_awake_min += 1;
             } else {
                 current_sleep_phase = LIGHT;
+                sleep_data.stat_light_sleep_min += 1;
             }
         } else {
             current_sleep_phase = REM;
+            sleep_data.stat_rem_sleep_min += 1;
         }
     } else {
         current_sleep_phase = DEEP;
+        sleep_data.stat_deep_sleep_min += 1;
     }
-    // TODO: Do persist the value
+    
+    if (sleep_data.count_values < MAX_COUNT)
+        sleep_data.minutes_value[sleep_data.count_values] = motion_peek_in_min;
+    
+    sleep_data.count_values += 1;
+
+    // TODO: Maybe store in DB or post in sync layer
+    
     motion_peek_in_min = 0;
 }
 
@@ -330,10 +376,12 @@ void notify_status_update(int a_status) {
     if (a_status == STATUS_ACTIVE) {
         vibes_short_pulse();
         start_motion_capturing();
+        start_sleep_data_capturing();
         app_active = YES;
     } else if (a_status == STATUS_NOTACTIVE) {
         vibes_double_pulse();
         stop_motion_capturing();
+        stop_sleep_data_capturing();
         app_active = NO;
     }
 }
