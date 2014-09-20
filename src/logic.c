@@ -94,7 +94,7 @@ void persist_read_config() {
 
 void start_sleep_data_capturing() {
     time_t temp = time(NULL);
-    sleep_data.start_time = localtime(&temp);
+    sleep_data.start_time = temp;
     sleep_data.finished = false;
     
     sleep_data.stat_deep_sleep_min = 0;
@@ -104,23 +104,34 @@ void start_sleep_data_capturing() {
     
     //uint8_t *minutes_value;
     sleep_data.count_values = 0;
+#ifdef DEBUG
+    time_t t1 = sleep_data.start_time;
+    struct tm *tt = localtime(&t1);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Start capturing ==");
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "* Started:      %02d:%02d", tt->tm_hour, tt->tm_min);
+#endif
 }
 
 void stop_sleep_data_capturing() {
-    time_t temp = time(NULL);
-    sleep_data.end_time = localtime(&temp);
-    sleep_data.finished = true;
-    
+    if (sleep_data.finished == false) {
+        time_t temp = time(NULL);
+        sleep_data.end_time = temp;
+        sleep_data.finished = true;
 #ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Stop capturing: ");
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Started:  %02d:%02d", sleep_data.start_time->tm_hour, sleep_data.start_time->tm_min);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Finished: %02d:%02d", sleep_data.end_time->tm_hour, sleep_data.end_time->tm_min);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Deep  sleep:  %d min", sleep_data.stat_deep_sleep_min);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "REM   sleep:  %d min", sleep_data.stat_rem_sleep_min);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Light sleep:  %d min", sleep_data.stat_light_sleep_min);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Awake sleep:  %d min", sleep_data.stat_awake_min);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Count values: %d", sleep_data.count_values);
+        time_t t1 = sleep_data.start_time;
+        struct tm *tt = localtime(&t1);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Stop capturing ==");
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Started:      %02d:%02d", tt->tm_hour, tt->tm_min);
+        time_t t2 = sleep_data.end_time;
+        struct tm *tte = localtime(&t2);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Started:      %02d:%02d", tte->tm_hour, tte->tm_min);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Deep  sleep:  %d min", sleep_data.stat_deep_sleep_min);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "* REM   sleep:  %d min", sleep_data.stat_rem_sleep_min);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Light sleep:  %d min", sleep_data.stat_light_sleep_min);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Awake sleep:  %d min", sleep_data.stat_awake_min);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Count values: %d", sleep_data.count_values);
 #endif
+    }
 }
 
 void increase_start_hour() {
@@ -242,7 +253,7 @@ static void motion_timer_callback(void *data) {
 
 #ifdef DEBUG
 static void reporting_timer_callback(void *data) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Motion vectors %u %d/%d/%d current phase: %d", motion_peek_in_min, last_x, last_y, last_z, current_sleep_phase);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Motion peek: %u for vector: %d/%d/%d", motion_peek_in_min, last_x, last_y, last_z);
     timerRep = app_timer_register(REPORTING_STEP_MS, reporting_timer_callback, NULL);
 }
 #endif
@@ -279,6 +290,7 @@ static void execute_alarm() {
 
 void call_stop_alarm_if_running() {
     if (alarm_in_motion) {
+        stop_sleep_data_capturing();
         app_timer_cancel(alarm_timer);
         alarm_in_motion = NO;
         refresh_display();
@@ -327,9 +339,6 @@ static void check_alarm(struct tm *tick_time) {
 }
 
 static void persist_motion(struct tm *tick_time) {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist motion %u", motion_peek_in_min);
-#endif
     if (motion_peek_in_min > DEEP_SLEEP_THRESHOLD) {
         if (motion_peek_in_min > REM_SLEEP_THRESHOLD) {
             if (motion_peek_in_min > LIGHT_THRESHOLD) {
@@ -354,7 +363,9 @@ static void persist_motion(struct tm *tick_time) {
     sleep_data.count_values += 1;
 
     // TODO: Maybe store in DB or post in sync layer
-    
+#ifdef DEBUG
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist motion %u - sleep phase: %d", motion_peek_in_min, current_sleep_phase);
+#endif
     motion_peek_in_min = 0;
 }
 
@@ -409,7 +420,6 @@ void stop_motion_capturing() {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Stop motion capturing");
     app_timer_cancel(timerRep);
 #endif
-    
     app_timer_cancel(timer);
 
 }

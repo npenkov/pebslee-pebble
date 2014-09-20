@@ -52,8 +52,8 @@ typedef struct {
 } GlobalConfig;
 
 typedef struct {
-    struct tm *start_time;
-    struct tm *end_time;
+    uint32_t start_time;
+    uint32_t end_time;
     bool finished;
     
     uint8_t stat_deep_sleep_min;
