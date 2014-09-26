@@ -40,12 +40,16 @@ static int16_t last_y = 0;
 static int16_t last_z = 0;
 
 const int ACCEL_STEP_MS = 300;
-const int DELTA = 43;
+const int DELTA = 30;
 const int REPORTING_STEP_MS = 2000;
 
-const int DEEP_SLEEP_THRESHOLD = 130;
-const int REM_SLEEP_THRESHOLD = 300;
-const int LIGHT_THRESHOLD = 600;
+#define DEEP_SLEEP_THRESHOLD 90
+#define REM_SLEEP_THRESHOLD 240
+#define LIGHT_THRESHOLD 450
+
+#define COUNT_TRESHOLDS 5
+
+static int thresholds[COUNT_TRESHOLDS] = { 0, DEEP_SLEEP_THRESHOLD, REM_SLEEP_THRESHOLD, LIGHT_THRESHOLD, 65535 };
 
 const uint8_t LAST_MIN_WAKE = 2;
 
@@ -97,13 +101,12 @@ void start_sleep_data_capturing() {
     sleep_data.start_time = temp;
     sleep_data.finished = false;
     
-    sleep_data.stat_deep_sleep_min = 0;
-    sleep_data.stat_light_sleep_min = 0;
-    sleep_data.stat_rem_sleep_min = 0;
-    sleep_data.stat_awake_min = 0;
+    for (int i = 0; i < COUNT_PHASES; i++)
+        sleep_data.stat[i] = 0;
     
     //uint8_t *minutes_value;
     sleep_data.count_values = 0;
+    current_sleep_phase = AWAKE;
 #ifdef DEBUG
     time_t t1 = sleep_data.start_time;
     struct tm *tt = localtime(&t1);
@@ -112,24 +115,45 @@ void start_sleep_data_capturing() {
 #endif
 }
 
+#ifdef DEBUG
+static char* decode_phase(int a_phase) {
+    switch (a_phase) {
+        case DEEP:
+            return "Deep sleep";
+        case REM:
+            return "REM sleep";
+        case LIGHT:
+            return "Light sleep";
+        case AWAKE:
+            return "Awake";
+        default:
+            return "unknown";
+            break;
+    }
+}
+
+static void dump_current_state() {
+    time_t t1 = sleep_data.start_time;
+    struct tm *tt = localtime(&t1);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "* Started:      %02d:%02d", tt->tm_hour, tt->tm_min);
+    for (int i = 0; i < COUNT_PHASES; i ++) {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "* %s:  %d min", decode_phase(i+1), sleep_data.stat[i]);
+    }
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "* Count values: %d", sleep_data.count_values);
+}
+#endif
+
 void stop_sleep_data_capturing() {
     if (sleep_data.finished == false) {
         time_t temp = time(NULL);
         sleep_data.end_time = temp;
         sleep_data.finished = true;
 #ifdef DEBUG
-        time_t t1 = sleep_data.start_time;
-        struct tm *tt = localtime(&t1);
         APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Stop capturing ==");
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Started:      %02d:%02d", tt->tm_hour, tt->tm_min);
         time_t t2 = sleep_data.end_time;
         struct tm *tte = localtime(&t2);
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Started:      %02d:%02d", tte->tm_hour, tte->tm_min);
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Deep  sleep:  %d min", sleep_data.stat_deep_sleep_min);
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "* REM   sleep:  %d min", sleep_data.stat_rem_sleep_min);
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Light sleep:  %d min", sleep_data.stat_light_sleep_min);
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Awake sleep:  %d min", sleep_data.stat_awake_min);
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Count values: %d", sleep_data.count_values);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "* Ended:        %02d:%02d", tte->tm_hour, tte->tm_min);
+        dump_current_state();
 #endif
     }
 }
@@ -339,7 +363,21 @@ static void check_alarm(struct tm *tick_time) {
 }
 
 static void persist_motion(struct tm *tick_time) {
-    if (motion_peek_in_min > DEEP_SLEEP_THRESHOLD) {
+    int direction = 0;
+    for (int i = 1; i < COUNT_TRESHOLDS; i++) {
+        if (motion_peek_in_min > thresholds[i-1] && motion_peek_in_min <= thresholds[i]) {
+            if (current_sleep_phase > i) {
+                direction = -1;
+            } else if (current_sleep_phase < i) {
+                direction = 1;
+            }
+        }
+    }
+    int temp_phase = current_sleep_phase + direction;
+    current_sleep_phase = temp_phase;
+    sleep_data.stat[current_sleep_phase-1] += 1;
+    
+/*    if (motion_peek_in_min > DEEP_SLEEP_THRESHOLD) {
         if (motion_peek_in_min > REM_SLEEP_THRESHOLD) {
             if (motion_peek_in_min > LIGHT_THRESHOLD) {
                 current_sleep_phase = AWAKE;
@@ -355,7 +393,7 @@ static void persist_motion(struct tm *tick_time) {
     } else {
         current_sleep_phase = DEEP;
         sleep_data.stat_deep_sleep_min += 1;
-    }
+    } */
     
     if (sleep_data.count_values < MAX_COUNT)
         sleep_data.minutes_value[sleep_data.count_values] = motion_peek_in_min;
@@ -364,7 +402,9 @@ static void persist_motion(struct tm *tick_time) {
 
     // TODO: Maybe store in DB or post in sync layer
 #ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist motion %u - sleep phase: %d", motion_peek_in_min, current_sleep_phase);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist motion %u - sleep phase: %s", motion_peek_in_min, decode_phase(current_sleep_phase));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Sleep data ==");
+    dump_current_state();
 #endif
     motion_peek_in_min = 0;
 }

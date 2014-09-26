@@ -51,15 +51,14 @@ typedef struct {
 
 } GlobalConfig;
 
+#define COUNT_PHASES 4
+
 typedef struct {
     uint32_t start_time;
     uint32_t end_time;
     bool finished;
     
-    uint8_t stat_deep_sleep_min;
-    uint8_t stat_light_sleep_min;
-    uint8_t stat_rem_sleep_min;
-    uint8_t stat_awake_min;
+    uint16_t stat[COUNT_PHASES];
     
     uint16_t minutes_value[MAX_COUNT];
     uint16_t count_values;
