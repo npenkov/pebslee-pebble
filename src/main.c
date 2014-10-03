@@ -27,6 +27,10 @@
 static void handle_init(void) {
     accel_data_service_subscribe(0, NULL);
 	show_sleep_window();
+    app_message_register_inbox_received(in_received_handler);
+    app_message_register_inbox_dropped(in_dropped_handler);
+    app_message_register_outbox_sent(out_sent_handler);
+    app_message_register_outbox_failed(out_failed_handler);
 }
 
 static void handle_deinit(void) {

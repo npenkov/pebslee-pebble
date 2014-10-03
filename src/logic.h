@@ -53,6 +53,16 @@ typedef struct {
 
 #define COUNT_PHASES 4
 
+#define PS_DATALOG_TAG_START_TIME     7771
+#define PS_DATALOG_TAG_END_TIME       7772
+#define PS_DATALOG_TAG_STAT_VALUES    7773
+
+#define PS_APP_MESSAGE_COMMAND_START_SYNC  7774
+
+#define PS_APP_MSG_HEADER_START 1
+#define PS_APP_MSG_HEADER_END 2
+#define PS_APP_MSG_HEADER_COUNT 3
+
 typedef struct {
     uint32_t start_time;
     uint32_t end_time;
@@ -99,4 +109,9 @@ void stop_motion_capturing();
 
 void call_stop_alarm_if_running();
 
-#endif /* LOGIC_H_ */  
+void out_sent_handler(DictionaryIterator *sent, void *context);
+void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context);
+void in_received_handler(DictionaryIterator *received, void *context);
+void in_dropped_handler(AppMessageResult reason, void *context);
+
+#endif /* LOGIC_H_ */
