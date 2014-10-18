@@ -23,6 +23,7 @@
 #include <pebble.h>
 #include "logic.h"
 #include "sleep_window.h"
+#include "sleep_stats.h"
 
 #define DEBUG 1
 
@@ -41,7 +42,7 @@ static int16_t last_z = 0;
 
 const int ACCEL_STEP_MS = 300;
 const int DELTA = 0;
-const int REPORTING_STEP_MS = 10000;
+const int REPORTING_STEP_MS = 20000;
 
 #define DEEP_SLEEP_THRESHOLD 50
 #define REM_SLEEP_THRESHOLD 51
@@ -57,13 +58,6 @@ const uint8_t LAST_MIN_WAKE = 2;
 
 static SleepData sleep_data;
 
-typedef enum {
-    DEEP = 1,
-    REM = 2,
-    LIGHT = 3,
-    AWAKE = 4
-} SleepPhases;
-
 static SleepPhases current_sleep_phase;
 
 static AppTimer *timer;
@@ -75,6 +69,11 @@ static AppTimer *timerRep;
 GlobalConfig *get_config() {
 	return &config;
 }
+
+SleepData *get_sleep_data() {
+    return &sleep_data;
+}
+
 
 void set_config_mode(int a_mode) {
     config.mode = a_mode;
@@ -167,22 +166,24 @@ static void send_data_log_uint16(int tag, int count_values, const uint16_t *valu
 }
 
 
-static void send_sleep_data_to_phone() {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "send sleep data to phone");
-#endif
-    send_data_log_uint32(PS_DATALOG_TAG_START_TIME, 1, &(sleep_data.start_time));
-    send_data_log_uint32(PS_DATALOG_TAG_END_TIME, 1, &(sleep_data.end_time));
-    send_data_log_uint16(PS_DATALOG_TAG_STAT_VALUES, sleep_data.count_values, sleep_data.minutes_value);
-}
+//static void send_sleep_data_to_phone() {
+//#ifdef DEBUG
+//    APP_LOG(APP_LOG_LEVEL_DEBUG, "send sleep data to phone");
+//#endif
+//    send_data_log_uint32(PS_DATALOG_TAG_START_TIME, 1, &(sleep_data.start_time));
+//    send_data_log_uint32(PS_DATALOG_TAG_END_TIME, 1, &(sleep_data.end_time));
+//    send_data_log_uint16(PS_DATALOG_TAG_STAT_VALUES, sleep_data.count_values, sleep_data.minutes_value);
+//}
 
 void stop_sleep_data_capturing() {
     if (sleep_data.finished == false) {
-        time_t temp = time(NULL);
+        time_t temp;
+        time(&temp);
         sleep_data.end_time = temp;
         sleep_data.finished = true;
         
-        send_sleep_data_to_phone();
+        show_sleep_stats();
+//        send_sleep_data_to_phone();
 #ifdef DEBUG
         APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Stop capturing ==");
         time_t t2 = sleep_data.end_time;
@@ -284,9 +285,9 @@ static void motion_timer_callback(void *data) {
         delta_z = 0;
         // We don't know if there is a motion, when last values are initial
     } else {
-        delta_x = abs(accel.x - last_x)/2;
-        delta_y = abs(accel.y - last_y)/2;
-        delta_z = abs(accel.z - last_z)/2;
+        delta_x = abs(accel.x - last_x);
+        delta_y = abs(accel.y - last_y);
+        delta_z = abs(accel.z - last_z);
         
         // Don't take into account value that are less than delta
         if (delta_x < DELTA)
@@ -339,6 +340,9 @@ static void recure_alarm() {
 }
 
 static void execute_alarm() {
+#ifdef DEBUG
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Execute alarm");
+#endif
     stop_motion_capturing();
     app_active = NO;
     vib_count = 0;
@@ -356,25 +360,53 @@ void call_stop_alarm_if_running() {
     }
 }
 
-static void check_alarm(struct tm *tick_time) {
-     if (config.mode == MODE_WORKDAY) {
+void check_alarm() {
+#ifdef DEBUG
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: Check alarm");
+#endif
+
+    if (config.mode == MODE_WORKDAY) {
+        time_t t1;
+        time(&t1);
+        struct tm *tt = localtime(&t1);
+        int h = tt->tm_hour;
+        int m = tt->tm_min;
+        
+#ifdef DEBUG
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: Mode: with alarm: %d:%d", h, m);
+#endif
+        
          // We have active alarm
          // so check interval
-         if (tick_time->tm_hour >= config.start_wake_hour &&
-             tick_time->tm_hour <= config.end_wake_hour) {
+         if (h >= config.start_wake_hour &&
+             h <= config.end_wake_hour) {
+#ifdef DEBUG
+             APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: Active alarm: %d == %d ", h, config.start_wake_hour);
+             APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: ....: %d >= %d ", m, config.start_wake_min);
+#endif
+
              bool inTime = YES;
-             if (tick_time->tm_hour == config.start_wake_hour) {
-                 if (tick_time->tm_min >= config.start_wake_min)
+             if (h == config.start_wake_hour) {
+                 if (m >= config.start_wake_min)
                      inTime = YES;
                  else
                      return;
              }
-             if (tick_time->tm_hour == config.end_wake_hour) {
-                 if (tick_time->tm_min <= config.end_wake_min)
+#ifdef DEBUG
+             APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: Start wake hour in");
+#endif
+
+             if (h == config.end_wake_hour) {
+                 if (m <= config.end_wake_min)
                      inTime = YES;
                  else
                      return;
              }
+#ifdef DEBUG
+             APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: End wake hour in");
+#endif
+             
+             
              if (inTime && current_sleep_phase == LIGHT) {
                  execute_alarm();
                  return;
@@ -389,7 +421,11 @@ static void check_alarm(struct tm *tick_time) {
              } else {
                  delta_time_m = config.end_wake_min - LAST_MIN_WAKE;
              }
-             if (delta_time_h < tick_time->tm_hour || (delta_time_h == tick_time->tm_hour && delta_time_m < tick_time->tm_min)) {
+#ifdef DEBUG
+             APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: Last minute checked");
+#endif
+
+             if (delta_time_h < h || (delta_time_h == h && delta_time_m < m)) {
                  execute_alarm();
                  return;
              }
@@ -397,7 +433,7 @@ static void check_alarm(struct tm *tick_time) {
      }
 }
 
-static void persist_motion(struct tm *tick_time) {
+static void persist_motion() {
     if (sleep_data.count_values >= MAX_COUNT-1)
         return;
     
@@ -434,10 +470,8 @@ static void persist_motion(struct tm *tick_time) {
  */
 void minute_timer_tick() {
     if (app_active) {
-        time_t temp = time(NULL);
-        struct tm *tick_time = localtime(&temp);
-        persist_motion(tick_time);
-        check_alarm(tick_time);
+        persist_motion();
+        check_alarm();
     }
 }
 

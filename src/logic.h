@@ -75,6 +75,12 @@ typedef struct {
     
 } SleepData;
 
+typedef enum {
+    DEEP = 1,
+    REM = 2,
+    LIGHT = 3,
+    AWAKE = 4
+} SleepPhases;
 
 void notify_status_update(int a_status);
 void notify_mode_update(int a_mode);
@@ -83,6 +89,8 @@ void notify_app_tracking_stopped();
 void notify_app_tracking_started();
 
 GlobalConfig *get_config();
+SleepData *get_sleep_data();
+
 void set_config_mode(int a_mode);
 void set_config_status(int a_status);
 void set_config_start_time(uint8_t a_hour, uint8_t a_min);
