@@ -44,8 +44,11 @@ const int ACCEL_STEP_MS = 300;
 const int DELTA = 0;
 const int REPORTING_STEP_MS = 20000;
 
-#define DEEP_SLEEP_THRESHOLD 50
-#define REM_SLEEP_THRESHOLD 51
+const float GO_UP_COEFICENT = 1.5;
+const float GO_DOWN_COEFICENT = 0.7;
+
+#define DEEP_SLEEP_THRESHOLD 30
+#define REM_SLEEP_THRESHOLD 31
 #define LIGHT_THRESHOLD 300
 
 #define START_PEEK_MOTION 2000
@@ -67,7 +70,7 @@ static AppTimer *timerRep;
 #endif
 
 GlobalConfig *get_config() {
-	return &config;
+    return &config;
 }
 
 SleepData *get_sleep_data() {
@@ -145,25 +148,25 @@ static void dump_current_state() {
 }
 #endif
 
-static void send_data_log_uint32(int tag, int count_values, const uint32_t *values) {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "%d send %d uint32", tag, count_values);
-#endif
-    DataLoggingSessionRef send_session = data_logging_create(tag, DATA_LOGGING_UINT, 4, false);
-    DataLoggingResult r = data_logging_log(send_session, values, count_values);
-    // TODO: Check result
-    data_logging_finish(send_session);
-}
-
-static void send_data_log_uint16(int tag, int count_values, const uint16_t *values) {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "%d send %d uint16", tag, count_values);
-#endif
-    DataLoggingSessionRef send_session = data_logging_create(tag, DATA_LOGGING_UINT, 2, false);
-    DataLoggingResult r = data_logging_log(send_session, values, count_values);
-    // TODO: Check result
-    data_logging_finish(send_session);
-}
+//static void send_data_log_uint32(int tag, int count_values, const uint32_t *values) {
+//#ifdef DEBUG
+//    APP_LOG(APP_LOG_LEVEL_DEBUG, "%d send %d uint32", tag, count_values);
+//#endif
+//    DataLoggingSessionRef send_session = data_logging_create(tag, DATA_LOGGING_UINT, 4, false);
+//    DataLoggingResult r = data_logging_log(send_session, values, count_values);
+//    // TODO: Check result
+//    data_logging_finish(send_session);
+//}
+//
+//static void send_data_log_uint16(int tag, int count_values, const uint16_t *values) {
+//#ifdef DEBUG
+//    APP_LOG(APP_LOG_LEVEL_DEBUG, "%d send %d uint16", tag, count_values);
+//#endif
+//    DataLoggingSessionRef send_session = data_logging_create(tag, DATA_LOGGING_UINT, 2, false);
+//    DataLoggingResult r = data_logging_log(send_session, values, count_values);
+//    // TODO: Check result
+//    data_logging_finish(send_session);
+//}
 
 
 //static void send_sleep_data_to_phone() {
@@ -183,7 +186,7 @@ void stop_sleep_data_capturing() {
         sleep_data.finished = true;
         
         show_sleep_stats();
-//        send_sleep_data_to_phone();
+        //        send_sleep_data_to_phone();
 #ifdef DEBUG
         APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Stop capturing ==");
         time_t t2 = sleep_data.end_time;
@@ -266,8 +269,8 @@ static void memo_motion(uint16_t peek) {
  * Process motion data, and take the peeks of body motion
  */
 static void motion_timer_callback(void *data) {
-	AccelData accel = (AccelData ) { .x = 0, .y = 0, .z = 0 };
-	accel_service_peek(&accel);
+    AccelData accel = (AccelData ) { .x = 0, .y = 0, .z = 0 };
+    accel_service_peek(&accel);
     
     // Not interested in values from vibration
     if (accel.did_vibrate) {
@@ -298,9 +301,9 @@ static void motion_timer_callback(void *data) {
         
         if (delta_z < DELTA)
             delta_z = 0;
-
+        
         uint16_t delta_value = (delta_x + delta_y + delta_z)/3;
-    
+        
         memo_motion(delta_value);
     }
     
@@ -308,7 +311,7 @@ static void motion_timer_callback(void *data) {
     last_y = accel.y;
     last_z = accel.z;
     
-	timer = app_timer_register(ACCEL_STEP_MS, motion_timer_callback, NULL);
+    timer = app_timer_register(ACCEL_STEP_MS, motion_timer_callback, NULL);
 }
 
 #ifdef DEBUG
@@ -361,10 +364,6 @@ void call_stop_alarm_if_running() {
 }
 
 void check_alarm() {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: Check alarm");
-#endif
-
     if (config.mode == MODE_WORKDAY) {
         time_t t1;
         time(&t1);
@@ -372,65 +371,47 @@ void check_alarm() {
         int h = tt->tm_hour;
         int m = tt->tm_min;
         
-#ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: Mode: with alarm: %d:%d", h, m);
-#endif
-        
-         // We have active alarm
-         // so check interval
-         if (h >= config.start_wake_hour &&
-             h <= config.end_wake_hour) {
-#ifdef DEBUG
-             APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: Active alarm: %d == %d ", h, config.start_wake_hour);
-             APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: ....: %d >= %d ", m, config.start_wake_min);
-#endif
-
-             bool inTime = YES;
-             if (h == config.start_wake_hour) {
-                 if (m >= config.start_wake_min)
-                     inTime = YES;
-                 else
-                     return;
-             }
-#ifdef DEBUG
-             APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: Start wake hour in");
-#endif
-
-             if (h == config.end_wake_hour) {
-                 if (m <= config.end_wake_min)
-                     inTime = YES;
-                 else
-                     return;
-             }
-#ifdef DEBUG
-             APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: End wake hour in");
-#endif
-             
-             
-             if (inTime && current_sleep_phase == LIGHT) {
-                 execute_alarm();
-                 return;
-             }
-             // Check the last delta minutes
-             uint8_t delta_time_h = config.end_wake_hour;
-             uint8_t delta_time_m = config.end_wake_min;
-             if (config.end_wake_min - LAST_MIN_WAKE < 0 ) {
-                 if (delta_time_h == 0)
-                     delta_time_h = 23;
-                 delta_time_m = 60 + (config.end_wake_min - LAST_MIN_WAKE);
-             } else {
-                 delta_time_m = config.end_wake_min - LAST_MIN_WAKE;
-             }
-#ifdef DEBUG
-             APP_LOG(APP_LOG_LEVEL_DEBUG, "CA: Last minute checked");
-#endif
-
-             if (delta_time_h < h || (delta_time_h == h && delta_time_m < m)) {
-                 execute_alarm();
-                 return;
-             }
-          }
-     }
+        // We have active alarm
+        // so check interval
+        if (h >= config.start_wake_hour &&
+            h <= config.end_wake_hour) {
+            
+            bool inTime = YES;
+            if (h == config.start_wake_hour) {
+                if (m >= config.start_wake_min)
+                    inTime = YES;
+                else
+                    return;
+            }
+            
+            if (h == config.end_wake_hour) {
+                if (m <= config.end_wake_min)
+                    inTime = YES;
+                else
+                    return;
+            }
+            
+            if (inTime && current_sleep_phase == LIGHT) {
+                execute_alarm();
+                return;
+            }
+            // Check the last delta minutes
+            uint8_t delta_time_h = config.end_wake_hour;
+            uint8_t delta_time_m = config.end_wake_min;
+            if (config.end_wake_min - LAST_MIN_WAKE < 0 ) {
+                if (delta_time_h == 0)
+                    delta_time_h = 23;
+                delta_time_m = 60 + (config.end_wake_min - LAST_MIN_WAKE);
+            } else {
+                delta_time_m = config.end_wake_min - LAST_MIN_WAKE;
+            }
+            
+            if (delta_time_h < h || (delta_time_h == h && delta_time_m < m)) {
+                execute_alarm();
+                return;
+            }
+        }
+    }
 }
 
 static void persist_motion() {
@@ -439,8 +420,8 @@ static void persist_motion() {
     
     int med_val = abs(motion_peek_in_min - sleep_data.minutes_value[sleep_data.count_values])/2;
     uint16_t median_peek = (motion_peek_in_min - sleep_data.minutes_value[sleep_data.count_values]) > 0
-                            ? sleep_data.minutes_value[sleep_data.count_values] + med_val
-                            : sleep_data.minutes_value[sleep_data.count_values] - med_val;
+    ? sleep_data.minutes_value[sleep_data.count_values] + (med_val*GO_UP_COEFICENT)
+    : sleep_data.minutes_value[sleep_data.count_values] - (med_val*GO_DOWN_COEFICENT);
     
     for (int i = 1; i < COUNT_TRESHOLDS; i++) {
         if (median_peek > thresholds[i-1] && median_peek <= thresholds[i]) {
@@ -449,7 +430,7 @@ static void persist_motion() {
         }
     }
     sleep_data.stat[current_sleep_phase-1] += 1;
-
+    
     
     sleep_data.count_values += 1;
     sleep_data.minutes_value[sleep_data.count_values] = median_peek;
@@ -513,7 +494,7 @@ void stop_motion_capturing() {
     app_timer_cancel(timerRep);
 #endif
     app_timer_cancel(timer);
-
+    
 }
 
 // ================== Communication ======================
