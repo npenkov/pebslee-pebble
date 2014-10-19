@@ -25,7 +25,7 @@
 #include "sleep_window.h"
 #include "sleep_stats.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 static uint8_t vib_count;
 static bool alarm_in_motion = NO;
