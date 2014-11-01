@@ -27,6 +27,11 @@
 static void handle_init(void) {
     accel_data_service_subscribe(0, NULL);
 	show_sleep_window();
+    
+    const int inbound_size = 128;
+    const int outbound_size = 128;
+    app_message_open(inbound_size, outbound_size);
+    
     app_message_register_inbox_received(in_received_handler);
     app_message_register_inbox_dropped(in_dropped_handler);
     app_message_register_outbox_sent(out_sent_handler);

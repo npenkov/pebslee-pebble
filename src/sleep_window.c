@@ -69,21 +69,21 @@ static void initialise_ui(void) {
     text_layer_set_font(s_tl_time, s_res_bitham_42_bold);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_time);
     
-    // s_tl_date
-    s_tl_date = text_layer_create(GRect(-1, 125, 144, 27));
-    text_layer_set_text(s_tl_date, "Wed 30");
-    text_layer_set_text_alignment(s_tl_date, GTextAlignmentCenter);
-    text_layer_set_font(s_tl_date, s_res_roboto_condensed_21);
-    layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_date);
-    
     // s_tl_status
-    s_tl_status = text_layer_create(GRect(-1, 98, 144, 26));
+    s_tl_status = text_layer_create(GRect(0, 126, 144, 26));
     text_layer_set_background_color(s_tl_status, GColorClear);
     text_layer_set_text_color(s_tl_status, GColorWhite);
     text_layer_set_text(s_tl_status, "not tracking");
     text_layer_set_text_alignment(s_tl_status, GTextAlignmentCenter);
     text_layer_set_font(s_tl_status, s_res_roboto_condensed_21);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_status);
+
+    // s_tl_date
+    s_tl_date = text_layer_create(GRect(0, 98, 144, 27));
+    text_layer_set_text(s_tl_date, "Wed 30");
+    text_layer_set_text_alignment(s_tl_date, GTextAlignmentCenter);
+    text_layer_set_font(s_tl_date, s_res_roboto_condensed_21);
+    layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_date);
     
     // s_tl_mode
     s_tl_mode = text_layer_create(GRect(1, 21, 144, 28));
@@ -114,7 +114,7 @@ static void initialise_ui(void) {
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_up_right);
     
     // s_bm_down_right
-    s_bm_down_right = bitmap_layer_create(GRect(135, 104, 8, 14));
+    s_bm_down_right = bitmap_layer_create(GRect(135, 132, 8, 14));
     bitmap_layer_set_bitmap(s_bm_down_right, s_res_img_arrow_right_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_down_right);
     

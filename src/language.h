@@ -23,10 +23,17 @@
 #ifndef LANGUAGE_H_
 #define LANGUAGE_H_
 
-#define MODE_WEEKEND_STR "no alarm"
-#define MODE_WORKDAY_STR "with alarm"
+#define MODE_WEEKEND_STR        "no alarm"
+#define MODE_WORKDAY_STR        "with alarm"
   
-#define STATUS_ACTIVE_STR "sleep (active)"  
-#define STATUS_NOTACTIVE_STR "not tracking"  
+#define STATUS_ACTIVE_STR       "sleep (active)"
+#define STATUS_NOTACTIVE_STR    "not tracking"
+
+#define DEEP_SLEEP_STATUS_STR   "Deep sleep"
+#define REM_SLEEL_STATUS_STR    "REM sleep"
+#define LIGHT_SLEEP_STATUS_STR  "Light sleep"
+#define AWAKE_STATUS_STR        "Awake"
+#define UNKNOWN_STATUS_STR      "unknown"
+
 
 #endif /* LANGUAGE_H_ */

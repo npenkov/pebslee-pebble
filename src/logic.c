@@ -24,35 +24,44 @@
 #include "logic.h"
 #include "sleep_window.h"
 #include "sleep_stats.h"
+#include "language.h"
 
 #define DEBUG 0
 
 static uint8_t vib_count;
 static bool alarm_in_motion = NO;
 static AppTimer *alarm_timer;
-const int ALARM_TIME_BETWEEN_ITERATIONS = 5000; // 3 sec
-const int ALARM_MAX_ITERATIONS = 10;
+
+const int ALARM_TIME_BETWEEN_ITERATIONS = 5000; // 5 sec
+const int ALARM_MAX_ITERATIONS = 10; // Vibrate max 10 times
 
 static GlobalConfig config;
 static uint16_t motion_peek_in_min = 0;
 static int app_active = NO;
+
 static int16_t last_x = 0;
 static int16_t last_y = 0;
 static int16_t last_z = 0;
 
+// The interval we collect values
 const int ACCEL_STEP_MS = 300;
+
 const int DELTA = 0;
+// For debugging purposes - this is the interval that current state is printed in console
 const int REPORTING_STEP_MS = 20000;
+const int SYNC_STEP_MS = 3000;
 
 const float GO_UP_COEFICENT = 1.5;
 const float GO_DOWN_COEFICENT = 0.7;
 
-#define DEEP_SLEEP_THRESHOLD 30
-#define REM_SLEEP_THRESHOLD 31
-#define LIGHT_THRESHOLD 300
+#define DEEP_SLEEP_THRESHOLD 100
+#define REM_SLEEP_THRESHOLD 101
+#define LIGHT_THRESHOLD 800
 
-#define START_PEEK_MOTION 2000
+// Start with this value down
+#define START_PEEK_MOTION 1000
 
+// The number of value types/thresholds
 #define COUNT_TRESHOLDS 5
 
 static int thresholds[COUNT_TRESHOLDS] = { 0, DEEP_SLEEP_THRESHOLD, REM_SLEEP_THRESHOLD, LIGHT_THRESHOLD, 65535 };
@@ -68,6 +77,10 @@ static AppTimer *timer;
 #ifdef DEBUG
 static AppTimer *timerRep;
 #endif
+
+static AppTimer *timerSync;
+static bool sync_start = false;
+static bool sync_in_progress = false;
 
 GlobalConfig *get_config() {
     return &config;
@@ -124,15 +137,15 @@ void start_sleep_data_capturing() {
 static char* decode_phase(int a_phase) {
     switch (a_phase) {
         case DEEP:
-            return "Deep sleep";
+            return DEEP_SLEEP_STATUS_STR;
         case REM:
-            return "REM sleep";
+            return REM_SLEEL_STATUS_STR;
         case LIGHT:
-            return "Light sleep";
+            return LIGHT_SLEEP_STATUS_STR;
         case AWAKE:
-            return "Awake";
+            return AWAKE_STATUS_STR;
         default:
-            return "unknown";
+            return UNKNOWN_STATUS_STR;
             break;
     }
 }
@@ -148,36 +161,6 @@ static void dump_current_state() {
 }
 #endif
 
-//static void send_data_log_uint32(int tag, int count_values, const uint32_t *values) {
-//#ifdef DEBUG
-//    APP_LOG(APP_LOG_LEVEL_DEBUG, "%d send %d uint32", tag, count_values);
-//#endif
-//    DataLoggingSessionRef send_session = data_logging_create(tag, DATA_LOGGING_UINT, 4, false);
-//    DataLoggingResult r = data_logging_log(send_session, values, count_values);
-//    // TODO: Check result
-//    data_logging_finish(send_session);
-//}
-//
-//static void send_data_log_uint16(int tag, int count_values, const uint16_t *values) {
-//#ifdef DEBUG
-//    APP_LOG(APP_LOG_LEVEL_DEBUG, "%d send %d uint16", tag, count_values);
-//#endif
-//    DataLoggingSessionRef send_session = data_logging_create(tag, DATA_LOGGING_UINT, 2, false);
-//    DataLoggingResult r = data_logging_log(send_session, values, count_values);
-//    // TODO: Check result
-//    data_logging_finish(send_session);
-//}
-
-
-//static void send_sleep_data_to_phone() {
-//#ifdef DEBUG
-//    APP_LOG(APP_LOG_LEVEL_DEBUG, "send sleep data to phone");
-//#endif
-//    send_data_log_uint32(PS_DATALOG_TAG_START_TIME, 1, &(sleep_data.start_time));
-//    send_data_log_uint32(PS_DATALOG_TAG_END_TIME, 1, &(sleep_data.end_time));
-//    send_data_log_uint16(PS_DATALOG_TAG_STAT_VALUES, sleep_data.count_values, sleep_data.minutes_value);
-//}
-
 void stop_sleep_data_capturing() {
     if (sleep_data.finished == false) {
         time_t temp;
@@ -186,7 +169,6 @@ void stop_sleep_data_capturing() {
         sleep_data.finished = true;
         
         show_sleep_stats();
-        //        send_sleep_data_to_phone();
 #ifdef DEBUG
         APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Stop capturing ==");
         time_t t2 = sleep_data.end_time;
@@ -414,6 +396,32 @@ void check_alarm() {
     }
 }
 
+static void store_data(SleepData* data) {
+    // Store in DB
+    persist_write_int(PERSISTENT_START_TIME_KEY, data->start_time);
+    persist_write_int(PERSISTENT_END_TIME_KEY, data->end_time);
+    
+    int32_t cnt_values = data->count_values;
+    persist_write_int(PERSISTENT_COUNT_KEY, cnt_values);
+    
+    persist_write_data(PERSISTENT_VALUES_KEY, data->minutes_value, data->count_values*2);
+}
+
+static SleepData* read_data() {
+    SleepData *data = malloc(sizeof(SleepData));
+    
+    // Store in DB
+    data->start_time = persist_read_int(PERSISTENT_START_TIME_KEY);
+    data->end_time = persist_read_int(PERSISTENT_END_TIME_KEY);
+    
+    int32_t cnt_values = persist_read_int(PERSISTENT_COUNT_KEY);
+    data->count_values = cnt_values;
+    
+    persist_read_data(PERSISTENT_VALUES_KEY, data->minutes_value, data->count_values*2);
+    return data;
+}
+
+
 static void persist_motion() {
     if (sleep_data.count_values >= MAX_COUNT-1)
         return;
@@ -435,7 +443,7 @@ static void persist_motion() {
     sleep_data.count_values += 1;
     sleep_data.minutes_value[sleep_data.count_values] = median_peek;
     
-    // TODO: Maybe store in DB or post in sync layer
+    store_data(&sleep_data);
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist motion %d/%u - sleep phase: %s", med_val, median_peek, decode_phase(current_sleep_phase));
     APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Sleep data ==");
@@ -499,40 +507,68 @@ void stop_motion_capturing() {
 
 // ================== Communication ======================
 static void ps_sleep_data() {
+    uint32_t start_time = 0;
+    uint32_t end_time = 0;
+    uint16_t count_values = 0;
+    
     if (!sleep_data.finished) {
 #ifdef DEBUG
         APP_LOG(APP_LOG_LEVEL_DEBUG, "no data to send");
 #endif
-        return;
+    } else {
+#ifdef DEBUG
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "about to send %d values", sleep_data.count_values);
+#endif
+        start_time = sleep_data.start_time;
+        end_time = sleep_data.end_time;
+        count_values = sleep_data.count_values;
     }
-    const uint32_t inbound_size = 16;
-    // Header = 2 uint32 = 2*4 = 8 + 2 (count_values) + uint16*count
-    const uint32_t outbound_size = 8 + 2 + (sleep_data.count_values * 2);
-    app_message_open(inbound_size, outbound_size);
     
     DictionaryIterator *iter;
     app_message_outbox_begin(&iter);
+    int counter = 0;
     
-    Tuplet headerTupleStart = TupletInteger(PS_APP_MSG_HEADER_START, sleep_data.start_time);
+    Tuplet headerTupleStart = TupletInteger(PS_APP_MSG_HEADER_START, start_time);
     dict_write_tuplet(iter, &headerTupleStart);
-    Tuplet headerTupleEnd = TupletInteger(PS_APP_MSG_HEADER_END, sleep_data.end_time);
+    Tuplet headerTupleEnd = TupletInteger(PS_APP_MSG_HEADER_END, end_time);
     dict_write_tuplet(iter, &headerTupleEnd);
     
-    Tuplet headerTupleCount = TupletInteger(PS_APP_MSG_HEADER_COUNT, sleep_data.count_values);
+    Tuplet headerTupleCount = TupletInteger(PS_APP_MSG_HEADER_COUNT, count_values);
     dict_write_tuplet(iter, &headerTupleCount);
-    
-    for (int i = 0; i < sleep_data.count_values; i++) {
-        Tuplet value = TupletInteger(i+3, sleep_data.stat[i]);
+    counter = 3;
+    for (int i = 0; i < count_values; i++, counter++) {
+        if (counter%10 == 0) {
+            dict_write_end(iter);
+            app_message_outbox_send();
+            
+            app_message_outbox_begin(&iter);
+        }
+#ifdef DEBUG
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "add key %d value %d", i+4, sleep_data.minutes_value[i]);
+#endif
+        Tuplet value = TupletInteger(i+4, sleep_data.minutes_value[i]);
         dict_write_tuplet(iter, &value);
     }
     dict_write_end(iter);
     app_message_outbox_send();
 }
 
+static void sync_timer_callback() {
+    if (sync_in_progress)
+        return;
+    if (sync_start) {
+        sync_start = false;
+        ps_sleep_data();
+        return;
+    }
+    timerSync = app_timer_register(SYNC_STEP_MS, sync_timer_callback, NULL);
+}
+
 void out_sent_handler(DictionaryIterator *sent, void *context) {
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "out_sent_handler:");
 #endif
+    sync_in_progress = false;
 }
 
 
@@ -540,6 +576,9 @@ void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, voi
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "out_failed_handler:");
 #endif
+    sync_in_progress = false;
+    sync_start = true;
+    timerSync = app_timer_register(SYNC_STEP_MS, sync_timer_callback, NULL);
 }
 
 
@@ -547,7 +586,25 @@ void in_received_handler(DictionaryIterator *received, void *context) {
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "in_received_handler:");
 #endif
-    ps_sleep_data();
+    if (sync_in_progress) return;
+    if (sync_start) return;
+    
+    // TODO Check for received[PS_APP_TO_WATCH_COMMAND] == PS_APP_MESSAGE_COMMAND_START_SYNC
+//    Tuple *tuple = dict_read_begin_from_buffer(&received, buffer, final_size);
+//    while (tuple) {
+//        switch (tuple->key) {
+//            case PS_APP_TO_WATCH_COMMAND:
+//                foo(tuple->value->data, tuple->length);
+//                break;
+//            case ...:
+//                bar(tuple->value->cstring);
+//                break;
+//        }
+//        tuple = dict_read_next(&iter);
+//    }
+    
+    sync_start = true;
+    timerSync = app_timer_register(SYNC_STEP_MS, sync_timer_callback, NULL);
 }
 
 
