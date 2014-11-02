@@ -1,10 +1,9 @@
 {
-    "appKeys": {},
-    "capabilities": [
-        ""
-    ],
-    "companyName": "nick@npenkov.org",
-    "longName": "PebSlee",
+    "appKeys": {
+        "dummy": 0
+    },
+    "companyName": "Nick Penkov",
+    "longName": "PebSlee - Smart Sleep alarm and monitoring",
     "projectType": "native",
     "resources": {
         "media": [

@@ -26,8 +26,6 @@
 #include "sleep_stats.h"
 #include "language.h"
 
-#define DEBUG 0
-
 static uint8_t vib_count;
 static bool alarm_in_motion = NO;
 static AppTimer *alarm_timer;
@@ -407,6 +405,7 @@ static void store_data(SleepData* data) {
     persist_write_data(PERSISTENT_VALUES_KEY, data->minutes_value, data->count_values*2);
 }
 
+/*
 static SleepData* read_data() {
     SleepData *data = malloc(sizeof(SleepData));
     
@@ -420,7 +419,7 @@ static SleepData* read_data() {
     persist_read_data(PERSISTENT_VALUES_KEY, data->minutes_value, data->count_values*2);
     return data;
 }
-
+*/
 
 static void persist_motion() {
     if (sleep_data.count_values >= MAX_COUNT-1)
@@ -488,6 +487,7 @@ void notify_mode_update(int a_mode) {
 
 void start_motion_capturing() {
     motion_peek_in_min = 0;
+    AppWorkerResult result = app_worker_launch();
     timer = app_timer_register(ACCEL_STEP_MS, motion_timer_callback, NULL);
     
 #ifdef DEBUG
@@ -502,7 +502,8 @@ void stop_motion_capturing() {
     app_timer_cancel(timerRep);
 #endif
     app_timer_cancel(timer);
-    
+    // Stop the background worker
+    AppWorkerResult result = app_worker_kill();
 }
 
 // ================== Communication ======================

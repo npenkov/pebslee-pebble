@@ -120,43 +120,32 @@ static void destroy_ui(void) {
 }
 // END AUTO-GENERATED UI CODE
 
-static int get_hours(uint16_t min) {
-    int ret = 0;
-    ret = min/60;
-    return ret;
-}
+static void set_hours_minutes(TextLayer *layer, uint16_t minutes) {
+    int sz = sizeof("00:00");
+    char *tbuf = malloc(sz);
+    int h = minutes/60;
+    int m = minutes%60;
+    snprintf(tbuf, sz, "%02d:%02d", h, m);
 
-static int get_minutes(uint16_t min) {
-    int ret = 0;
-    ret = min%60;
-    return ret;
+#ifdef DEBUG
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "setLayer: param minutes %d", minutes);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "setLayer: %02d:%02d", h, m);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "setLayer: %s", tbuf);
+#endif
+    
+    text_layer_set_text(layer, tbuf);
 }
-
 
 static void update_ui_stat_values() {
     SleepData *sleep_data = get_sleep_data();
-//    for (int i = 0; i < COUNT_PHASES; i++)
-//        sleep_data.stat[i] = 0;
-    char *buffer1;
-    buffer1 = malloc(sizeof(char)*(2));
-    snprintf(buffer1, sizeof(buffer1), "%02d", sleep_data->stat[AWAKE-1]);
-    text_layer_set_text(s_val_awake, buffer1);
 
-    char *buffer2;
-    buffer2 = malloc(sizeof(char)*(2));
-    snprintf(buffer2, sizeof(buffer2), "%02d", sleep_data->stat[LIGHT-1]);
-    text_layer_set_text(s_val_light, buffer2);
-    
-    char *buffer3;
-    buffer3 = malloc(sizeof(char)*(2));
-    snprintf(buffer3, sizeof(buffer3), "%02d", sleep_data->stat[DEEP-1]);
-    text_layer_set_text(s_val_deep, buffer3);
-    
-    char *buffer4;
-    buffer4 = malloc(sizeof(char)*(2));
+    // TMP
     uint16_t total = sleep_data->stat[AWAKE-1] + sleep_data->stat[LIGHT-1] + sleep_data->stat[DEEP-1];
-    snprintf(buffer4, sizeof(buffer4), "%02d", total);
-    text_layer_set_text(s_val_total, buffer4);
+    
+    set_hours_minutes(s_val_awake, sleep_data->stat[AWAKE-1]);
+    set_hours_minutes(s_val_light, sleep_data->stat[LIGHT-1]);
+    set_hours_minutes(s_val_deep, sleep_data->stat[DEEP-1]);
+    set_hours_minutes(s_val_total, total);
 }
 
 static void handle_window_unload(Window* window) {
@@ -181,9 +170,11 @@ void show_sleep_stats(void) {
     });
     window_set_click_config_provider(s_window, config_provider);
     update_ui_stat_values();
+    light_enable(true);
     window_stack_push(s_window, true);
 }
 
 void hide_sleep_stats(void) {
+    light_enable(false);
     window_stack_remove(s_window, true);
 }
