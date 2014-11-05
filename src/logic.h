@@ -25,7 +25,7 @@
 #ifndef LOGIC_H_
 #define LOGIC_H_
 
-// #define DEBUG 0
+#define DEBUG 1
 
 #define MODE_WORKDAY 0
 #define MODE_WEEKEND 1
@@ -43,8 +43,17 @@
 #define PERSISTENT_COUNT_KEY 3
 #define PERSISTENT_VALUES_KEY 4
 
+// Max persistem
+#define COUNT_PERSISTENT_KEY 1001
+
 // Store no more that 12 hours
 #define MAX_COUNT 720
+
+#define MAX_PERSISTED_SLEEPS 10
+
+#define PERSISTENT_SLEEP_STEP 20
+#define MAX_PERSIST_BUFFER 240
+
 
 typedef struct {
     int mode;
@@ -69,9 +78,9 @@ typedef struct {
 #define PS_APP_MESSAGE_COMMAND_START_SYNC  21
 
 
-#define PS_APP_MSG_HEADER_START 1
-#define PS_APP_MSG_HEADER_END 2
-#define PS_APP_MSG_HEADER_COUNT 3
+#define PS_APP_MSG_HEADER_START 0
+#define PS_APP_MSG_HEADER_END 1
+#define PS_APP_MSG_HEADER_COUNT 2
 
 typedef struct {
     uint32_t start_time;
@@ -91,6 +100,13 @@ typedef enum {
     LIGHT = 3,
     AWAKE = 4
 } SleepPhases;
+
+typedef struct {
+    int countTuplets;
+    int currentSendChunk;
+    int sendChunkSize;
+    uint32_t data[MAX_COUNT+3]; // Header + data for 24h * 60 min
+} SendData;
 
 void notify_status_update(int a_status);
 void notify_mode_update(int a_mode);
@@ -132,4 +148,5 @@ void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, voi
 void in_received_handler(DictionaryIterator *received, void *context);
 void in_dropped_handler(AppMessageResult reason, void *context);
 
+void set_outbox_size(int outbox_size);
 #endif /* LOGIC_H_ */

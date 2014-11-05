@@ -23,14 +23,14 @@
 #include "pebble.h"
 #include "logic.h"
 #include "sleep_window.h"
-  
+
 static void handle_init(void) {
     accel_data_service_subscribe(0, NULL);
 	show_sleep_window();
-    
-    const int inbound_size = 128;
-    const int outbound_size = 128;
-    app_message_open(inbound_size, outbound_size);
+    int inbox_size = app_message_inbox_size_maximum();
+    int outbox_size = app_message_outbox_size_maximum();
+    app_message_open(inbox_size, outbox_size);
+    set_outbox_size(outbox_size);
     
     app_message_register_inbox_received(in_received_handler);
     app_message_register_inbox_dropped(in_dropped_handler);

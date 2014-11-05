@@ -394,32 +394,102 @@ void check_alarm() {
     }
 }
 
-static void store_data(SleepData* data) {
-    // Store in DB
-    persist_write_int(PERSISTENT_START_TIME_KEY, data->start_time);
-    persist_write_int(PERSISTENT_END_TIME_KEY, data->end_time);
-    
-    int32_t cnt_values = data->count_values;
-    persist_write_int(PERSISTENT_COUNT_KEY, cnt_values);
-    
-    persist_write_data(PERSISTENT_VALUES_KEY, data->minutes_value, data->count_values*2);
+//
+// ----- Current record index handling
+//
+static int get_current_persistent_index() {
+    if (persist_exists(COUNT_PERSISTENT_KEY)) {
+        int ret = persist_read_int(COUNT_PERSISTENT_KEY);
+        return ret;
+    } else {
+        persist_write_int(COUNT_PERSISTENT_KEY, 0);
+        return 0;
+    }
 }
 
-/*
-static SleepData* read_data() {
-    SleepData *data = malloc(sizeof(SleepData));
-    
+static int increse_current_persistent_index() {
+    int currentIndex = get_current_persistent_index();
+    if (currentIndex + 1 < COUNT_PERSISTENT_KEY) {
+        persist_write_int(CONFIG_PERSISTENT_KEY, ++currentIndex);
+        return currentIndex;
+    } else {
+        currentIndex = 0; // Make a round
+        persist_write_int(COUNT_PERSISTENT_KEY, 0);
+        return currentIndex;
+    }
+}
+
+
+//
+// ---- Read and store
+//
+static void store_data_with_index(SleepData* data, int recIndex) {
+    int offset = recIndex * PERSISTENT_SLEEP_STEP;
     // Store in DB
-    data->start_time = persist_read_int(PERSISTENT_START_TIME_KEY);
-    data->end_time = persist_read_int(PERSISTENT_END_TIME_KEY);
+    persist_write_int(PERSISTENT_START_TIME_KEY+offset, data->start_time);
+    persist_write_int(PERSISTENT_END_TIME_KEY+offset, data->end_time);
     
-    int32_t cnt_values = persist_read_int(PERSISTENT_COUNT_KEY);
-    data->count_values = cnt_values;
+    int32_t cnt_values = data->count_values;
+    persist_write_int(PERSISTENT_COUNT_KEY+offset, cnt_values);
     
-    persist_read_data(PERSISTENT_VALUES_KEY, data->minutes_value, data->count_values*2);
+    int dci = 0;
+    int totalSize = data->count_values*2;
+    if (totalSize < MAX_PERSIST_BUFFER) {
+        // Write it and return
+        persist_write_data(PERSISTENT_VALUES_KEY+offset, data->minutes_value, totalSize);
+    } else {
+        for (int i = 0; i < PERSISTENT_SLEEP_STEP; i++) {
+            int alreadyWrittenBytes = i*MAX_PERSIST_BUFFER;
+            int leftBytes = totalSize - alreadyWrittenBytes;
+            int currentSize = leftBytes < MAX_PERSIST_BUFFER ? leftBytes : MAX_PERSIST_BUFFER;
+            
+            persist_write_data(PERSISTENT_VALUES_KEY+offset+i, (data->minutes_value+i), currentSize);
+            
+            if (leftBytes < MAX_PERSIST_BUFFER)
+                break;
+        }
+    }
+    
+}
+
+static void store_data(SleepData* data) {
+    int recIndex = increse_current_persistent_index();
+    store_data_with_index(data, recIndex);
+}
+
+// Dont forget to free the data after used
+static SleepData* read_data(int recIndex) {
+    SleepData *data = malloc(sizeof(SleepData));
+    int offset = recIndex * PERSISTENT_SLEEP_STEP;
+    
+    if (persist_exists(PERSISTENT_START_TIME_KEY+offset) &&
+        persist_exists(PERSISTENT_END_TIME_KEY+offset) &&
+        persist_exists(PERSISTENT_COUNT_KEY+offset)) {
+        data->start_time = persist_read_int(PERSISTENT_START_TIME_KEY+offset);
+        data->end_time = persist_read_int(PERSISTENT_END_TIME_KEY+offset);
+    
+        int32_t cnt_values = persist_read_int(PERSISTENT_COUNT_KEY+offset);
+        data->count_values = cnt_values;
+        int dci = 0;
+        while (dci < PERSISTENT_SLEEP_STEP) {
+            uint32_t key = PERSISTENT_VALUES_KEY+offset+dci;
+            if (persist_exists(key)) {
+                int size = persist_get_size(key);
+                persist_read_data(key, (data->minutes_value+(dci*PERSISTENT_SLEEP_STEP)), size);
+            } else {
+                break;
+            }
+            dci++;
+        }
+    }
     return data;
 }
-*/
+
+// Dont forget to free the data after used
+static SleepData* read_last_data() {
+    int recIndex = get_current_persistent_index();
+    return read_data(recIndex);
+}
 
 static void persist_motion() {
     if (sleep_data.count_values >= MAX_COUNT-1)
@@ -442,7 +512,6 @@ static void persist_motion() {
     sleep_data.count_values += 1;
     sleep_data.minutes_value[sleep_data.count_values] = median_peek;
     
-    store_data(&sleep_data);
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist motion %d/%u - sleep phase: %s", med_val, median_peek, decode_phase(current_sleep_phase));
     APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Sleep data ==");
@@ -502,74 +571,102 @@ void stop_motion_capturing() {
     app_timer_cancel(timerRep);
 #endif
     app_timer_cancel(timer);
+    store_data(&sleep_data);
     // Stop the background worker
     AppWorkerResult result = app_worker_kill();
 }
 
 // ================== Communication ======================
-static void ps_sleep_data() {
-    uint32_t start_time = 0;
-    uint32_t end_time = 0;
-    uint16_t count_values = 0;
-    
-    if (!sleep_data.finished) {
+const int SEND_STEP_MS = 100;
+const int MAX_SEND_VALS = 20;
+static uint32_t message_outbox_size = 0;
+static AppTimer *timerSend;
+
+static SendData sendData;
+
+static void send_timer_callback() {
+    int tpIndex = (sendData.currentSendChunk * sendData.sendChunkSize);
 #ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "no data to send");
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "timer callback send for index %d", tpIndex);
 #endif
-    } else {
-#ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "about to send %d values", sleep_data.count_values);
-#endif
-        start_time = sleep_data.start_time;
-        end_time = sleep_data.end_time;
-        count_values = sleep_data.count_values;
+
+    if (tpIndex >= sendData.countTuplets) {
+        // Finished with sync
+        sync_in_progress = false;
+        sync_start = false;
+        return;
     }
-    
+
     DictionaryIterator *iter;
     app_message_outbox_begin(&iter);
-    int counter = 0;
-    
-    Tuplet headerTupleStart = TupletInteger(PS_APP_MSG_HEADER_START, start_time);
-    dict_write_tuplet(iter, &headerTupleStart);
-    Tuplet headerTupleEnd = TupletInteger(PS_APP_MSG_HEADER_END, end_time);
-    dict_write_tuplet(iter, &headerTupleEnd);
-    
-    Tuplet headerTupleCount = TupletInteger(PS_APP_MSG_HEADER_COUNT, count_values);
-    dict_write_tuplet(iter, &headerTupleCount);
-    counter = 3;
-    for (int i = 0; i < count_values; i++, counter++) {
-        if (counter%10 == 0) {
-            dict_write_end(iter);
-            app_message_outbox_send();
-            
-            app_message_outbox_begin(&iter);
+    int indexBeforeSend = tpIndex;
+    for (int i = 0; i < sendData.sendChunkSize; i++, tpIndex++) {
+        if (tpIndex < sendData.countTuplets) {
+            Tuplet value = TupletInteger(tpIndex, sendData.data[tpIndex]);
+            dict_write_tuplet(iter, &value);
         }
-#ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "add key %d value %d", i+4, sleep_data.minutes_value[i]);
-#endif
-        Tuplet value = TupletInteger(i+4, sleep_data.minutes_value[i]);
-        dict_write_tuplet(iter, &value);
     }
+#ifdef DEBUG
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "sent %d iteger tuples from %d to %d", (tpIndex - indexBeforeSend), indexBeforeSend, tpIndex);
+#endif
+    
     dict_write_end(iter);
     app_message_outbox_send();
+}
+
+static void send_last_stored_data() {
+    SleepData *lastSleep = read_last_data();
+    // Generate tuplets
+    sendData.countTuplets = 3 + lastSleep->count_values;
+    
+#ifdef DEBUG
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "About to send %d records", sendData.countTuplets);
+#endif
+    
+    int tpIndex = 0;
+
+    // Header
+    sendData.data[tpIndex++] = lastSleep->start_time;
+    sendData.data[tpIndex++] = lastSleep->end_time;
+    sendData.data[tpIndex++] = lastSleep->count_values;
+    
+    for (int i = 0; i < lastSleep->count_values; i++, tpIndex++) {
+        sendData.data[tpIndex] = lastSleep->minutes_value[i];
+    }
+    
+    uint32_t size = dict_calc_buffer_size(sendData.countTuplets, sizeof(uint32_t));
+    
+    if (size <= message_outbox_size) {
+        sendData.sendChunkSize = sendData.countTuplets;
+    } else {
+        sendData.sendChunkSize = (message_outbox_size / (size / sendData.countTuplets)) - 1; // -1 to be on the safe side
+    }
+    if (sendData.sendChunkSize > MAX_SEND_VALS) {
+        sendData.sendChunkSize = MAX_SEND_VALS;
+    }
+#ifdef DEBUG
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Determined chunk size %d for message outbox size %ld ", sendData.sendChunkSize, message_outbox_size);
+#endif
+    sendData.currentSendChunk = 0;
+    timerSend = app_timer_register(SEND_STEP_MS, send_timer_callback, NULL);
 }
 
 static void sync_timer_callback() {
     if (sync_in_progress)
         return;
     if (sync_start) {
-        sync_start = false;
-        ps_sleep_data();
+        sync_start = true;
+        send_last_stored_data();
         return;
     }
-    timerSync = app_timer_register(SYNC_STEP_MS, sync_timer_callback, NULL);
 }
 
 void out_sent_handler(DictionaryIterator *sent, void *context) {
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "out_sent_handler:");
 #endif
-    sync_in_progress = false;
+    sendData.currentSendChunk += 1;
+    timerSend = app_timer_register(SEND_STEP_MS, send_timer_callback, NULL);
 }
 
 
@@ -577,9 +674,8 @@ void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, voi
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "out_failed_handler:");
 #endif
-    sync_in_progress = false;
-    sync_start = true;
-    timerSync = app_timer_register(SYNC_STEP_MS, sync_timer_callback, NULL);
+    // Repeat lst chunk - do not increment the currentSendChunk
+    timerSend = app_timer_register(SEND_STEP_MS, send_timer_callback, NULL);
 }
 
 
@@ -613,4 +709,8 @@ void in_dropped_handler(AppMessageResult reason, void *context) {
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "in_dropped_handler:");
 #endif
+}
+
+void set_outbox_size(int outbox_size) {
+    message_outbox_size = outbox_size;
 }
