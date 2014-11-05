@@ -20,18 +20,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <pebble_worker.h>
+#ifndef PebSlee_constants_h
+#define PebSlee_constants_h
 
-static void init() {
-    // Initialize your worker here
-}
+// Store no more that 12 hours
+#define MAX_COUNT 720
+#define COUNT_PHASES 4
 
-static void deinit() {
-    // Deinitialize your worker here
-}
+typedef struct {
+    uint32_t start_time;
+    uint32_t end_time;
+    bool finished;
+    
+    uint16_t stat[COUNT_PHASES];
+    
+    uint16_t minutes_value[MAX_COUNT];
+    uint16_t count_values;
+    
+} SleepData;
 
-int main(void) {
-    init();
-    worker_event_loop();
-    deinit();
-}
+#endif

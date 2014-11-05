@@ -20,18 +20,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <pebble_worker.h>
+#include "constants.h"
 
-static void init() {
-    // Initialize your worker here
-}
+#ifndef PebSlee_comm_h
+#define PebSlee_comm_h
 
-static void deinit() {
-    // Deinitialize your worker here
-}
+void out_sent_handler(DictionaryIterator *sent, void *context);
+void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context);
+void in_received_handler(DictionaryIterator *received, void *context);
+void in_dropped_handler(AppMessageResult reason, void *context);
 
-int main(void) {
-    init();
-    worker_event_loop();
-    deinit();
-}
+void set_outbox_size(int outbox_size);
+
+#endif

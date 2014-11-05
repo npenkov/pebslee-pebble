@@ -20,6 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "constants.h"
+
 #pragma once
 
 #ifndef LOGIC_H_
@@ -46,9 +48,6 @@
 // Max persistem
 #define COUNT_PERSISTENT_KEY 1001
 
-// Store no more that 12 hours
-#define MAX_COUNT 720
-
 #define MAX_PERSISTED_SLEEPS 10
 
 #define PERSISTENT_SLEEP_STEP 20
@@ -67,8 +66,6 @@ typedef struct {
 
 } GlobalConfig;
 
-#define COUNT_PHASES 4
-
 #define PS_DATALOG_TAG_START_TIME     11
 #define PS_DATALOG_TAG_END_TIME       12
 #define PS_DATALOG_TAG_STAT_VALUES    13
@@ -81,18 +78,6 @@ typedef struct {
 #define PS_APP_MSG_HEADER_START 0
 #define PS_APP_MSG_HEADER_END 1
 #define PS_APP_MSG_HEADER_COUNT 2
-
-typedef struct {
-    uint32_t start_time;
-    uint32_t end_time;
-    bool finished;
-    
-    uint16_t stat[COUNT_PHASES];
-    
-    uint16_t minutes_value[MAX_COUNT];
-    uint16_t count_values;
-    
-} SleepData;
 
 typedef enum {
     DEEP = 1,
@@ -107,6 +92,8 @@ typedef struct {
     int sendChunkSize;
     uint32_t data[MAX_COUNT+3]; // Header + data for 24h * 60 min
 } SendData;
+
+
 
 void notify_status_update(int a_status);
 void notify_mode_update(int a_mode);
@@ -149,4 +136,5 @@ void in_received_handler(DictionaryIterator *received, void *context);
 void in_dropped_handler(AppMessageResult reason, void *context);
 
 void set_outbox_size(int outbox_size);
+SleepData* read_last_data();
 #endif /* LOGIC_H_ */

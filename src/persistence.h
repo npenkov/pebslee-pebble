@@ -20,18 +20,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <pebble_worker.h>
+#ifndef __PebSlee__persistence__
+#define __PebSlee__persistence__
 
-static void init() {
-    // Initialize your worker here
-}
+#include <stdio.h>
+#include "logic.h"
 
-static void deinit() {
-    // Deinitialize your worker here
-}
+void store_data(SleepData* data);
+SleepData* read_last_data();
 
-int main(void) {
-    init();
-    worker_event_loop();
-    deinit();
-}
+
+#endif /* defined(__PebSlee__persistence__) */
