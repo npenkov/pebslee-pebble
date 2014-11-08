@@ -25,6 +25,13 @@
 #ifndef PebSlee_comm_h
 #define PebSlee_comm_h
 
+#define PS_PHONE_COMMAND_TAG 21
+#define PS_PHONE_DATA_UINT8_TAG 22
+
+#define PS_PHONE_COMMAND_START_SYNC 1
+#define PS_PHONE_COMMAND_START_SYNC_INDEX 2
+
+
 void out_sent_handler(DictionaryIterator *sent, void *context);
 void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context);
 void in_received_handler(DictionaryIterator *received, void *context);

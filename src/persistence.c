@@ -26,127 +26,174 @@
 #include "persistence.h"
 #include "logic.h"
 
-//
-// ----- Current record index handling
-//
-static int get_current_persistent_index() {
-    if (persist_exists(COUNT_PERSISTENT_KEY)) {
-        int ret = persist_read_int(COUNT_PERSISTENT_KEY);
 #ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Get current persistent index %d", ret);
+void dump_stat_data(StatData *sd) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Stat data %ld %ld %d/%d/%d/%d", sd->start_time, sd->end_time, sd->stat[0], sd->stat[1], sd->stat[2], sd->stat[3]);
+}
 #endif
-        return ret;
+
+void store_data(SleepData* data) {
+
+    // Prevent storing empty sleep data
+    if (data->count_values <= 0)
+        return;
+        
+    // Store first the values
+    persist_write_int(PERSISTENT_COUNT_KEY, data->count_values);
+    // Transform values from 0->5000 to 0-255 scale
+    uint8_t *values = malloc(sizeof(uint8_t) * data->count_values);
+    for (int i = 0; i < data->count_values; i++) {
+        values[i] = data->minutes_value[i]*MEASURE_COEFICENT;
+    }
+    // Now write the values
+    //#define PERSISTENT_VALUES_KEY 2
+    // use 2, 3, 4 - every each with 240 bytes
+    int chunks = data->count_values / MAX_PERSIST_BUFFER;
+    if (data->count_values % MAX_PERSIST_BUFFER > 0)
+        chunks++;
+    
+    for (int i = 0; i < chunks; i++) {
+        int size = MAX_PERSIST_BUFFER;
+        if (i == chunks - 1) { // Last chunk
+            if (data->count_values % MAX_PERSIST_BUFFER > 0) {
+                size = data->count_values % MAX_PERSIST_BUFFER;
+            }
+        }
+        persist_write_data(PERSISTENT_VALUES_KEY+i, &values[i*MAX_PERSIST_BUFFER], size);
+    }
+    
+    // Write statistics
+    int csd = count_stat_data();
+    
+    StatData *new_stat = malloc(sizeof(StatData));
+    new_stat->start_time = data->start_time;
+    new_stat->end_time = data->end_time;
+    for (int i = 0; i < COUNT_PHASES; i++) {
+        new_stat->stat[i] = data->stat[i];
+    }
+    
+    StatData **stat_data = malloc(sizeof(StatData*)*csd);
+    for (int i = 0; i < csd; i++) {
+        StatData *sd = malloc(sizeof(StatData));
+        persist_read_data(STAT_START+i, sd, sizeof(StatData));
+        stat_data[i] = sd;
+#ifdef DEBUG
+        dump_stat_data(sd);
+#endif
+    }
+    
+    if (csd + 1 < MAX_STAT_COUNT) {
+#ifdef DEBUG
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist new stat record %d", (csd + 1));
+#endif
+        // Just add one more at the end
+        persist_write_data(STAT_START + csd, new_stat, sizeof(StatData));
+        persist_write_int(COUNT_STATS_KEY, csd + 1);
     } else {
-        persist_write_int(COUNT_PERSISTENT_KEY, 0);
 #ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Get current persistent index %d", 0);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist new stat record at the end");
 #endif
+        // Write from 1..MAX_STAT_COUNT
+        for (int i = 0; i < MAX_STAT_COUNT - 1; i++) {
+            persist_write_data(STAT_START + i, &stat_data[i+1], sizeof(stat_data[i+1]));
+        }
+        // ...and the newest one
+        persist_write_data(STAT_START + MAX_STAT_COUNT - 1, &new_stat, sizeof(new_stat));
+        persist_write_int(COUNT_STATS_KEY, MAX_STAT_COUNT);
+    }
+}
+
+SleepData* read_last_sleep_data() {
+    // Read the stats from DB
+    int csd = count_stat_data();
+    StatData *stat = malloc(sizeof(StatData));
+    persist_read_data(STAT_START+csd-1, &stat, sizeof(stat));
+    
+    // Create using stats
+    SleepData *sleep_data = malloc(sizeof(SleepData));
+    sleep_data->start_time = stat->start_time;
+    sleep_data->end_time = stat->end_time;
+    for (int i = 0; i < COUNT_PHASES; i++) {
+        sleep_data->stat[i] = stat->stat[i];
+    }
+    
+    // Read values
+    sleep_data->count_values = persist_read_int(PERSISTENT_COUNT_KEY);
+    
+    
+    uint8_t *values = malloc(sizeof(uint8_t) * sleep_data->count_values);
+    // Now write the values
+    //#define PERSISTENT_VALUES_KEY 2
+    // use 2, 3, 4 - every each with 240 bytes
+    int chunks = sleep_data->count_values / MAX_PERSIST_BUFFER;
+    if (sleep_data->count_values % MAX_PERSIST_BUFFER > 0)
+        chunks++;
+    
+    for (int i = 0; i < chunks; i++) {
+        int size = MAX_PERSIST_BUFFER;
+        if (i == chunks - 1) { // Last chunk
+            if (sleep_data->count_values % MAX_PERSIST_BUFFER > 0) {
+                size = sleep_data->count_values % MAX_PERSIST_BUFFER;
+            }
+        }
+        persist_read_data(PERSISTENT_VALUES_KEY+i, &values[i*MAX_PERSIST_BUFFER], size);
+    }
+    for (int i = 0; i < sleep_data->count_values; i++) {
+        sleep_data->minutes_value[i] = values[i]; // Cast from uint8 to uint16
+    }
+    
+    return sleep_data;
+}
+
+/*
+ * Storing and retrieving statistics data
+ */
+int count_stat_data() {
+    if (persist_exists(COUNT_STATS_KEY)) {
+        return persist_read_int(COUNT_STATS_KEY);
+    } else {
+        persist_write_int(COUNT_STATS_KEY, 0);
         return 0;
     }
 }
 
-static int increse_current_persistent_index() {
-    int currentIndex = get_current_persistent_index();
+StatData** read_stat_data() {
+    int csd = count_stat_data();
 #ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Increse current index %d", currentIndex);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Read stat data %d", csd);
 #endif
-    if (currentIndex + 1 < COUNT_PERSISTENT_KEY) {
-        persist_write_int(COUNT_PERSISTENT_KEY, ++currentIndex);
+    StatData **stat_data = malloc(sizeof(StatData*)*csd);
+    for (int i = 0; i < csd; i++) {
+        StatData *sd = malloc(sizeof(StatData));
+        persist_read_data(STAT_START+i, sd, sizeof(StatData));
 #ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "...return %d", currentIndex);
+        dump_stat_data(sd);
 #endif
-        return currentIndex;
-    } else {
-        currentIndex = 0; // Make a round
-        persist_write_int(COUNT_PERSISTENT_KEY, 0);
-#ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "...return %d", currentIndex);
-#endif
-        return currentIndex;
+        stat_data[i] = sd;
     }
+    return stat_data;
 }
 
-
-//
-// ---- Read and store
-//
-static void store_data_with_index(SleepData* data, int recIndex) {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Store data with recIndex %d", recIndex);
-#endif
-    
-    int offset = recIndex * PERSISTENT_SLEEP_STEP;
-    // Store in DB
-    persist_write_int(PERSISTENT_START_TIME_KEY+offset, data->start_time);
-    persist_write_int(PERSISTENT_END_TIME_KEY+offset, data->end_time);
-    
-    int32_t cnt_values = data->count_values;
-    persist_write_int(PERSISTENT_COUNT_KEY+offset, cnt_values);
-    
-    int dci = 0;
-    int totalSize = data->count_values*2;
-    if (totalSize < MAX_PERSIST_BUFFER) {
-        // Write it and return
-        persist_write_data(PERSISTENT_VALUES_KEY+offset, data->minutes_value, totalSize);
-    } else {
-        for (int i = 0; i < PERSISTENT_SLEEP_STEP; i++) {
-            int alreadyWrittenBytes = i*MAX_PERSIST_BUFFER;
-            int leftBytes = totalSize - alreadyWrittenBytes;
-            int currentSize = leftBytes < MAX_PERSIST_BUFFER ? leftBytes : MAX_PERSIST_BUFFER;
-            
-            persist_write_data(PERSISTENT_VALUES_KEY+offset+i, (data->minutes_value+i), currentSize);
-            
-            if (leftBytes < MAX_PERSIST_BUFFER)
-                break;
-        }
+/*
+ * Migrate the DB version
+ */
+void migrate_version() {
+    if (!persist_exists(VERSION_KEY)) {
+        // In version 1.0 we have 4 values
+        if (persist_exists(1))
+            persist_delete(1);
+        if (persist_exists(2))
+            persist_delete(2);
+        if (persist_exists(3))
+            persist_delete(3);
+        if (persist_exists(4))
+            persist_delete(4);
+        persist_write_int(COUNT_STATS_KEY, 0);
+        persist_write_int(VERSION_KEY, 1);
     }
-    
-}
-
-void store_data(SleepData* data) {
-    int recIndex = increse_current_persistent_index();
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Store data with index %d", recIndex);
-#endif
-    store_data_with_index(data, recIndex);
-}
-
-// Dont forget to free the data after used
-static SleepData* read_data(int recIndex) {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Read data with recIndex %d", recIndex);
-#endif
-    SleepData *data = malloc(sizeof(SleepData));
-    int offset = recIndex * PERSISTENT_SLEEP_STEP;
-    
-    if (persist_exists(PERSISTENT_START_TIME_KEY+offset) &&
-        persist_exists(PERSISTENT_END_TIME_KEY+offset) &&
-        persist_exists(PERSISTENT_COUNT_KEY+offset)) {
-        data->start_time = persist_read_int(PERSISTENT_START_TIME_KEY+offset);
-        data->end_time = persist_read_int(PERSISTENT_END_TIME_KEY+offset);
-        
-        int32_t cnt_values = persist_read_int(PERSISTENT_COUNT_KEY+offset);
-        data->count_values = cnt_values;
-        int dci = 0;
-        while (dci < PERSISTENT_SLEEP_STEP) {
-            uint32_t key = PERSISTENT_VALUES_KEY+offset+dci;
-            if (persist_exists(key)) {
-                int size = persist_get_size(key);
-                persist_read_data(key, (data->minutes_value+(dci*PERSISTENT_SLEEP_STEP)), size);
-            } else {
-                break;
-            }
-            dci++;
-        }
-    }
-    return data;
-}
-
-// Dont forget to free the data after used
-SleepData* read_last_data() {
-    int recIndex = get_current_persistent_index();
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Read last data with recIndex %d", recIndex);
-#endif
-    return read_data(recIndex);
+    // Reset data
+//    for (int i = 0; i <= COUNT_STATS_KEY; i++) {
+//        if (persist_exists(i))
+//            persist_delete(i);
+//    }
 }

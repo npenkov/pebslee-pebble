@@ -38,21 +38,9 @@
 #define NO 0  
 #define YES 1
 
-#define CONFIG_PERSISTENT_KEY 0
+#define MAX_MEASURE_VALUE 5000
 
-#define PERSISTENT_START_TIME_KEY 1
-#define PERSISTENT_END_TIME_KEY 2
-#define PERSISTENT_COUNT_KEY 3
-#define PERSISTENT_VALUES_KEY 4
-
-// Max persistem
-#define COUNT_PERSISTENT_KEY 1001
-
-#define MAX_PERSISTED_SLEEPS 10
-
-#define PERSISTENT_SLEEP_STEP 20
-#define MAX_PERSIST_BUFFER 240
-
+#define MEASURE_COEFICENT 255/5000;
 
 typedef struct {
     int mode;
@@ -66,14 +54,9 @@ typedef struct {
 
 } GlobalConfig;
 
-#define PS_DATALOG_TAG_START_TIME     11
-#define PS_DATALOG_TAG_END_TIME       12
-#define PS_DATALOG_TAG_STAT_VALUES    13
-
 #define PS_APP_TO_WATCH_COMMAND  1
 
 #define PS_APP_MESSAGE_COMMAND_START_SYNC  21
-
 
 #define PS_APP_MSG_HEADER_START 0
 #define PS_APP_MSG_HEADER_END 1

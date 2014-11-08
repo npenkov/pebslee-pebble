@@ -163,7 +163,8 @@ void stop_sleep_data_capturing() {
         sleep_data.end_time = temp;
         sleep_data.finished = true;
         
-        show_sleep_stats();
+        store_data(&sleep_data);
+        
 #ifdef DEBUG
         APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Stop capturing ==");
         time_t t2 = sleep_data.end_time;
@@ -171,6 +172,7 @@ void stop_sleep_data_capturing() {
         APP_LOG(APP_LOG_LEVEL_DEBUG, "* Ended:        %02d:%02d", tte->tm_hour, tte->tm_min);
         dump_current_state();
 #endif
+        show_sleep_stats();
     }
 }
 
@@ -471,7 +473,7 @@ void stop_motion_capturing() {
     app_timer_cancel(timerRep);
 #endif
     app_timer_cancel(timer);
-    store_data(&sleep_data);
+
     // Stop the background worker
     AppWorkerResult result = app_worker_kill();
 }

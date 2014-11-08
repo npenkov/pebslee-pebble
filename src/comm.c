@@ -65,7 +65,7 @@ static void send_timer_callback() {
         }
     }
 #ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "sent %d iteger tuples from %d to %d", (tpIndex - indexBeforeSend), indexBeforeSend, tpIndex);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "sent %d integer tuples from %d to %d", (tpIndex - indexBeforeSend), indexBeforeSend, tpIndex);
 #endif
     
     dict_write_end(iter);
@@ -73,7 +73,7 @@ static void send_timer_callback() {
 }
 
 static void send_last_stored_data() {
-    SleepData *lastSleep = read_last_data();
+    SleepData *lastSleep = read_last_sleep_data();
     // Generate tuplets
     sendData.countTuplets = 3 + lastSleep->count_values;
     
@@ -99,7 +99,7 @@ static void send_last_stored_data() {
     } else {
         sendData.sendChunkSize = (message_outbox_size / (size / sendData.countTuplets)) - 1; // -1 to be on the safe side
     }
-    if (sendData.sendChunkSize > MAX_SEND_VALS) {
+    if (sendData.sendChunkSize > MAX_SEND_VALS || sendData.sendChunkSize <= 0) {
         sendData.sendChunkSize = MAX_SEND_VALS;
     }
 #ifdef DEBUG
@@ -145,18 +145,18 @@ void in_received_handler(DictionaryIterator *received, void *context) {
     if (sync_start) return;
     
     // TODO Check for received[PS_APP_TO_WATCH_COMMAND] == PS_APP_MESSAGE_COMMAND_START_SYNC
-    //    Tuple *tuple = dict_read_begin_from_buffer(&received, buffer, final_size);
-    //    while (tuple) {
-    //        switch (tuple->key) {
-    //            case PS_APP_TO_WATCH_COMMAND:
-    //                foo(tuple->value->data, tuple->length);
-    //                break;
-    //            case ...:
-    //                bar(tuple->value->cstring);
-    //                break;
-    //        }
-    //        tuple = dict_read_next(&iter);
-    //    }
+//    Tuple *tuple = dict_read_begin_from_buffer(&received, buffer, final_size);
+//    while (tuple) {
+//        switch (tuple->key) {
+//            case PS_APP_TO_WATCH_COMMAND:
+//                foo(tuple->value->data, tuple->length);
+//                break;
+//            case ...:
+//                bar(tuple->value->cstring);
+//                break;
+//        }
+//        tuple = dict_read_next(&iter);
+//    }
     
     sync_start = true;
     timerSync = app_timer_register(SYNC_STEP_MS, sync_timer_callback, NULL);

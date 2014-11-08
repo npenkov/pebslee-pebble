@@ -22,9 +22,13 @@
 
 #include "pebble.h"
 #include "logic.h"
+#include "persistence.h"
 #include "sleep_window.h"
 
 static void handle_init(void) {
+    // Migrate DB
+    migrate_version();
+    
     accel_data_service_subscribe(0, NULL);
 	show_sleep_window();
     int inbox_size = app_message_inbox_size_maximum();
