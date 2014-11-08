@@ -27,7 +27,7 @@
 #ifndef LOGIC_H_
 #define LOGIC_H_
 
-#define DEBUG 1
+//#define DEBUG 1
 
 #define MODE_WORKDAY 0
 #define MODE_WEEKEND 1
