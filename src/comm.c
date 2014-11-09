@@ -144,22 +144,19 @@ void in_received_handler(DictionaryIterator *received, void *context) {
     if (sync_in_progress) return;
     if (sync_start) return;
     
-    // TODO Check for received[PS_APP_TO_WATCH_COMMAND] == PS_APP_MESSAGE_COMMAND_START_SYNC
-//    Tuple *tuple = dict_read_begin_from_buffer(&received, buffer, final_size);
-//    while (tuple) {
-//        switch (tuple->key) {
-//            case PS_APP_TO_WATCH_COMMAND:
-//                foo(tuple->value->data, tuple->length);
-//                break;
-//            case ...:
-//                bar(tuple->value->cstring);
-//                break;
-//        }
-//        tuple = dict_read_next(&iter);
-//    }
+
+    Tuple *command_tupple = dict_find(received, PS_APP_TO_WATCH_COMMAND);
     
-    sync_start = true;
-    timerSync = app_timer_register(SYNC_STEP_MS, sync_timer_callback, NULL);
+    if (command_tupple) {
+        if(command_tupple->value->uint8 == PS_APP_MESSAGE_COMMAND_START_SYNC) {
+            sync_start = true;
+            timerSync = app_timer_register(SYNC_STEP_MS, sync_timer_callback, NULL);
+        } else if (command_tupple->value->uint8 == PS_APP_MESSAGE_COMMAND_SET_TIME) {
+            // TODO:...
+//            set_config_start_time(uint8_t a_hour, uint8_t a_min);
+//            set_config_end_time(uint8_t a_hour, uint8_t a_min);
+        }
+    }
 }
 
 

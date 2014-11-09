@@ -107,7 +107,7 @@ SleepData* read_last_sleep_data() {
     // Read the stats from DB
     int csd = count_stat_data();
     StatData *stat = malloc(sizeof(StatData));
-    persist_read_data(STAT_START+csd-1, &stat, sizeof(stat));
+    persist_read_data(STAT_START+csd-1, stat, sizeof(StatData));
     
     // Create using stats
     SleepData *sleep_data = malloc(sizeof(SleepData));
