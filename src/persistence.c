@@ -61,6 +61,7 @@ void store_data(SleepData* data) {
         }
         persist_write_data(PERSISTENT_VALUES_KEY+i, &values[i*MAX_PERSIST_BUFFER], size);
     }
+    free(values);
     
     // Write statistics
     int csd = count_stat_data();
@@ -141,6 +142,7 @@ SleepData* read_last_sleep_data() {
     for (int i = 0; i < sleep_data->count_values; i++) {
         sleep_data->minutes_value[i] = values[i]; // Cast from uint8 to uint16
     }
+    free(values);
     
     return sleep_data;
 }

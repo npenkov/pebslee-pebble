@@ -56,6 +56,11 @@ typedef struct {
 
 #define PS_APP_TO_WATCH_COMMAND  1
 
+#define PS_APP_TO_WATCH_START_TIME_HOUR 3
+#define PS_APP_TO_WATCH_START_TIME_MINUTE 4
+#define PS_APP_TO_WATCH_END_TIME_HOUR 5
+#define PS_APP_TO_WATCH_END_TIME_MINUTE 6
+
 #define PS_APP_MESSAGE_COMMAND_START_SYNC  21
 #define PS_APP_MESSAGE_COMMAND_SET_TIME 22
 
@@ -74,7 +79,10 @@ typedef struct {
     int countTuplets;
     int currentSendChunk;
     int sendChunkSize;
-    uint32_t data[MAX_COUNT+3]; // Header + data for 24h * 60 min
+    uint32_t start_time;
+    uint32_t end_time;
+    uint16_t count_values;
+    uint8_t data[MAX_COUNT]; // Header + data for 24h * 60 min
 } SendData;
 
 

@@ -232,6 +232,10 @@ static void update_ui_stat_with_sd(StatData *sd) {
 static void update_ui_stat_values() {
     stats_data = read_stat_data();
     count_recs = count_stat_data();
+    if (stats_data == NULL || count_recs <= 0) {
+        hide_sleep_stats();
+        return;
+    }
     current_index = count_recs - 1;
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Update stats with index %d", current_index);
@@ -241,6 +245,7 @@ static void update_ui_stat_values() {
 
 static void handle_window_unload(Window* window) {
     destroy_ui();
+    free(stats_data);
 }
 
 static void back_click_handler(ClickRecognizerRef recognizer, void *context) {

@@ -21,6 +21,15 @@ for more details visit http://www.pebslee.com/
 
 # Version information
 
+## v.1.2
+
+* Sync Screen
+* Persist motion values in byte scale
+* Sync data - set start end time from phone
+* Sync data - send last sleep motion values to phone app
+
+[sync]https://github.com/npenkov/pebslee-pebble/blob/master/screenshots/sync_screen.png
+
 ## v.1.1
 
 * Store last 10 sleep statistics
