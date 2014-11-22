@@ -21,6 +21,10 @@ for more details visit http://www.pebslee.com/
 
 # Version information
 
+## v.1.3
+
+Fix bug in storing statistics when having more than 10 days tracking. Note that this version will delete old statistics data.
+
 ## v.1.2
 
 * Sync Screen

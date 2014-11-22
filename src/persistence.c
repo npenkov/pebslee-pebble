@@ -59,13 +59,19 @@ void store_data(SleepData* data) {
                 size = data->count_values % MAX_PERSIST_BUFFER;
             }
         }
+#ifdef DEBUG
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Write values with key %d", (PERSISTENT_VALUES_KEY+i));
+#endif
         persist_write_data(PERSISTENT_VALUES_KEY+i, &values[i*MAX_PERSIST_BUFFER], size);
     }
     free(values);
     
     // Write statistics
     int csd = count_stat_data();
-    
+#ifdef DEBUG
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Count stat data %d", csd);
+#endif
+
     StatData *new_stat = malloc(sizeof(StatData));
     new_stat->start_time = data->start_time;
     new_stat->end_time = data->end_time;
@@ -83,24 +89,24 @@ void store_data(SleepData* data) {
 #endif
     }
     
-    if (csd + 1 < MAX_STAT_COUNT) {
+    if (csd < MAX_STAT_COUNT) {
 #ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist new stat record %d", (csd + 1));
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist new stat record %d at %d", (csd + 1), (STAT_START + csd));
 #endif
         // Just add one more at the end
         persist_write_data(STAT_START + csd, new_stat, sizeof(StatData));
         persist_write_int(COUNT_STATS_KEY, csd + 1);
     } else {
 #ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist new stat record at the end");
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist new stat record at the end at %d", (STAT_START + csd));
 #endif
         // Write from 1..MAX_STAT_COUNT
         for (int i = 0; i < MAX_STAT_COUNT - 1; i++) {
-            persist_write_data(STAT_START + i, &stat_data[i+1], sizeof(stat_data[i+1]));
+            persist_write_data(STAT_START + i, stat_data[i+1], sizeof(StatData));
         }
         // ...and the newest one
-        persist_write_data(STAT_START + MAX_STAT_COUNT - 1, &new_stat, sizeof(new_stat));
-        persist_write_int(COUNT_STATS_KEY, MAX_STAT_COUNT);
+        persist_write_data(STAT_START + csd, new_stat, sizeof(StatData));
+        persist_write_int(COUNT_STATS_KEY, csd);
     }
 }
 
@@ -178,8 +184,10 @@ StatData** read_stat_data() {
 
 /*
  * Migrate the DB version
+ * Current version is 2
  */
 void migrate_version() {
+    const int current_db_version = 2;
     if (!persist_exists(VERSION_KEY)) {
         // In version 1.0 we have 4 values
         if (persist_exists(1))
@@ -191,8 +199,16 @@ void migrate_version() {
         if (persist_exists(4))
             persist_delete(4);
         persist_write_int(COUNT_STATS_KEY, 0);
-        persist_write_int(VERSION_KEY, 1);
+        persist_write_int(VERSION_KEY, current_db_version);
+    } else {
+        int version = persist_read_int(VERSION_KEY);
+        if (version == 1) {
+            // Drop statistics as they were stored in a wrong way
+            persist_delete(COUNT_STATS_KEY);
+            persist_write_int(VERSION_KEY, current_db_version);
+        }
     }
+    
     // Reset data
 //    for (int i = 0; i <= COUNT_STATS_KEY; i++) {
 //        if (persist_exists(i))
