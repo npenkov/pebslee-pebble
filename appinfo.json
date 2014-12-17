@@ -2,44 +2,18 @@
     "appKeys": {
         "dummy": 0
     },
+    "capabilities": [
+        ""
+    ],
     "companyName": "Nick Penkov",
     "longName": "PebSlee - Smart Sleep alarm and monitoring",
     "projectType": "native",
     "resources": {
         "media": [
             {
-                  "file": "images/sync-progress.png",
-                  "name": "IMG_SYNC_PROGRESS",
-                  "type": "png"
-            },
-            {
-                "file": "images/arrow_down_black_8x14.png",
-                "name": "IMG_DOWN_ARROW_BLACK_8X14",
-                "type": "png"
-            },
-            {
-                "file": "images/arrow_up_black_8x14.png",
-                "name": "IMG_UP_ARROW_BLACK_8X14",
-                "type": "png"
-            },
-            {
-                "file": "images/arrow_right_black_8x14.png",
-                "name": "IMG_ARROW_RIGHT_BLACK_8X14",
-                "type": "png"
-            },
-            {
-                "file": "images/icon-clock-white-22x25.png",
-                "name": "IMG_CLOCK_WHITE_22X25",
-                "type": "png"
-            },
-            {
-                "file": "images/icon-empty-22x25.png",
-                "name": "IMG_EMPTY_22X25",
-                "type": "png"
-            },
-            {
-                "file": "images/arrow_left_8x14.png",
-                "name": "IMG_ARROW_LEFT_8X14",
+                "file": "images/icon.png",
+                "menuIcon": true,
+                "name": "IMAGE_ICON",
                 "type": "png"
             },
             {
@@ -48,10 +22,39 @@
                 "type": "png"
             },
             {
-                "menuIcon": true,
-                "type": "png",
-                "name": "IMAGE_ICON",
-                "file": "images/icon.png"
+                "file": "images/arrow_left_8x14.png",
+                "name": "IMG_ARROW_LEFT_8X14",
+                "type": "png"
+            },
+            {
+                "file": "images/icon-empty-22x25.png",
+                "name": "IMG_EMPTY_22X25",
+                "type": "png"
+            },
+            {
+                "file": "images/icon-clock-white-22x25.png",
+                "name": "IMG_CLOCK_WHITE_22X25",
+                "type": "png"
+            },
+            {
+                "file": "images/arrow_right_black_8x14.png",
+                "name": "IMG_ARROW_RIGHT_BLACK_8X14",
+                "type": "png"
+            },
+            {
+                "file": "images/arrow_up_black_8x14.png",
+                "name": "IMG_UP_ARROW_BLACK_8X14",
+                "type": "png"
+            },
+            {
+                "file": "images/arrow_down_black_8x14.png",
+                "name": "IMG_DOWN_ARROW_BLACK_8X14",
+                "type": "png"
+            },
+            {
+                "file": "images/sync-progress.png",
+                "name": "IMG_SYNC_PROGRESS",
+                "type": "png"
             }
         ]
     },
