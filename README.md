@@ -21,6 +21,12 @@ for more details visit http://www.pebslee.com/
 
 # Version information
 
+## v.1.4
+
+* Fix stats persistence size (10)
+* Action menu with - View stats, Clear Stats, Set time, Version
+* DB and version maintanance
+
 ## v.1.3
 
 Fix bug in storing statistics when having more than 10 days tracking. Note that this version will delete old statistics data.

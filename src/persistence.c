@@ -105,7 +105,7 @@ void store_data(SleepData* data) {
             persist_write_data(STAT_START + i, stat_data[i+1], sizeof(StatData));
         }
         // ...and the newest one
-        persist_write_data(STAT_START + csd, new_stat, sizeof(StatData));
+        persist_write_data(STAT_START + csd - 1, new_stat, sizeof(StatData));
         persist_write_int(COUNT_STATS_KEY, csd);
     }
 }
@@ -187,7 +187,7 @@ StatData** read_stat_data() {
  * Current version is 2
  */
 void migrate_version() {
-    const int current_db_version = 2;
+    const int current_db_version = 3;
     if (!persist_exists(VERSION_KEY)) {
         // In version 1.0 we have 4 values
         if (persist_exists(1))
@@ -206,6 +206,27 @@ void migrate_version() {
             // Drop statistics as they were stored in a wrong way
             persist_delete(COUNT_STATS_KEY);
             persist_write_int(VERSION_KEY, current_db_version);
+        } else if (version == 2) {
+            StatData **sds = read_stat_data();
+            int csd = count_stat_data();
+            uint32_t old_start_time = 0;
+            uint32_t old_end_time = 0;
+            if (csd >= 1) {
+                old_start_time = sds[0]->start_time;
+                old_end_time = sds[0]->end_time;
+            }
+            int lastCount = csd;
+            for (int i = 1; i < csd; i++) {
+                if (old_start_time == sds[i]->start_time && old_end_time == sds[i]->end_time) {
+                    // Break and set counter
+                    lastCount = i;
+                    break;
+                } else {
+                    old_start_time = sds[i]->start_time;
+                    old_end_time = sds[i]->end_time;
+                }
+            }
+            persist_write_int(COUNT_STATS_KEY, lastCount);
         }
     }
     
@@ -214,4 +235,8 @@ void migrate_version() {
 //        if (persist_exists(i))
 //            persist_delete(i);
 //    }
+}
+
+void clear_sleep_stats() {
+    persist_write_int(COUNT_STATS_KEY, 0);
 }

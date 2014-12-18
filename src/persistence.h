@@ -68,4 +68,7 @@ StatData** read_stat_data();
 
 void migrate_version();
 
+void clear_sleep_stats();
+
+
 #endif /* defined(__PebSlee__persistence__) */

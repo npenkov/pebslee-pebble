@@ -25,6 +25,7 @@
 #include "logic.h"
 #include "language.h"
 #include "alarm_config.h"
+#include "action_menu.h"
 
 // First time update date field
 static int forceUpdateDate = YES;
@@ -270,9 +271,17 @@ static void down_long_click_release_handler(ClickRecognizerRef recognizer, void 
 }
 
 
+static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
+}
+
+static void select_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
+    show_action_menu();
+}
+
 static void config_provider(void *context) {
     window_long_click_subscribe(BUTTON_ID_UP, 700, up_long_click_handler, up_long_click_release_handler);
     window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+    window_long_click_subscribe(BUTTON_ID_SELECT, 700, select_long_click_handler, select_long_click_release_handler);
     window_long_click_subscribe(BUTTON_ID_DOWN, 700, down_long_click_handler, down_long_click_release_handler);
 }
 
