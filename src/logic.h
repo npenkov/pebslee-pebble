@@ -27,7 +27,7 @@
 #ifndef LOGIC_H_
 #define LOGIC_H_
 
-// #define DEBUG 1
+#define DEBUG 1
 
 #define MODE_WORKDAY 0
 #define MODE_WEEKEND 1
@@ -42,6 +42,14 @@
 
 #define MEASURE_COEFICENT 255/5000;
 
+#define UP_COEF_NOTSENSITIVE    12
+#define UP_COEF_NORMAL          15
+#define UP_COEF_VERYSENSITIVE   20
+
+#define DOWN_COEF_SLOW      05
+#define DOWN_COEF_NORMAL    07
+#define DOWN_COEF_FAST      10
+
 typedef struct {
     int mode;
     int status;
@@ -51,7 +59,9 @@ typedef struct {
     
     uint8_t end_wake_hour;
     uint8_t end_wake_min;
-
+    
+    int up_coef;
+    int down_coef;
 } GlobalConfig;
 
 #define PS_APP_TO_WATCH_COMMAND  1
@@ -100,6 +110,8 @@ void set_config_mode(int a_mode);
 void set_config_status(int a_status);
 void set_config_start_time(uint8_t a_hour, uint8_t a_min);
 void set_config_end_time(uint8_t a_hour, uint8_t a_min);
+void set_config_up_coef(int coef);
+void set_config_down_coef(int coef);
 
 void persist_write_config();
 void persist_read_config();

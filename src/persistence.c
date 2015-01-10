@@ -187,7 +187,7 @@ StatData** read_stat_data() {
  * Current version is 2
  */
 void migrate_version() {
-    const int current_db_version = 3;
+    const int current_db_version = 4;
     if (!persist_exists(VERSION_KEY)) {
         // In version 1.0 we have 4 values
         if (persist_exists(1))
@@ -205,7 +205,6 @@ void migrate_version() {
         if (version == 1) {
             // Drop statistics as they were stored in a wrong way
             persist_delete(COUNT_STATS_KEY);
-            persist_write_int(VERSION_KEY, current_db_version);
         } else if (version == 2) {
             StatData **sds = read_stat_data();
             int csd = count_stat_data();
@@ -227,6 +226,17 @@ void migrate_version() {
                 }
             }
             persist_write_int(COUNT_STATS_KEY, lastCount);
+        }
+        // Migrate sleep data structure
+        if (version < current_db_version) {
+#ifdef DEBUG
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "Migrate configuraiton data");
+#endif
+            persist_read_config();
+            set_config_up_coef(UP_COEF_NORMAL);
+            set_config_down_coef(DOWN_COEF_NORMAL);
+            persist_write_config();
+            persist_write_int(VERSION_KEY, current_db_version);
         }
     }
     

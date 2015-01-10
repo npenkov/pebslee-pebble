@@ -11,6 +11,7 @@
 #include "sleep_stats.h"
 #include "alarm_config.h"
 #include "persistence.h"
+#include "logic.h"
 
 
 
@@ -27,7 +28,7 @@ static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data
 // Each section has a number of items;  we use a callback to specify this
 // You can also dynamically add and remove items using this
 static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) {
-    return 4;
+    return 6;
 }
 
 // A callback is used to specify the height of the section header
@@ -36,9 +37,34 @@ static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t s
     return 0;
 }
 
-// Here we draw what each header is
-static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
+
+static char* decode_down_coef(float coef) {
+    if (coef == DOWN_COEF_SLOW) {
+        return "Slow";
+    } else if (coef == DOWN_COEF_NORMAL) {
+        return "Normal";
+    } else if (coef == DOWN_COEF_FAST) {
+        return "Fast";
+    } else {
+        return "Unknown";
+    }
 }
+
+static char* decode_up_coef(float coef) {
+    if (coef == UP_COEF_NOTSENSITIVE) {
+        return "Not sensitive";
+    } else if (coef == UP_COEF_NORMAL) {
+        return "Normal";
+    } else if (coef == UP_COEF_VERYSENSITIVE) {
+        return "Very sensitive";
+    } else {
+        return "Unknown";
+    }
+}
+
+// Here we draw what each header is
+//static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
+//}
 
 // This is the menu item draw callback where you specify what each item should look like
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
@@ -53,13 +79,22 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
             menu_cell_title_draw(ctx, cell_layer, "Clear stats");
             break;
         case 3:
-            menu_cell_title_draw(ctx, cell_layer, "Version: 1.4");
+            menu_cell_basic_draw(ctx, cell_layer, "Fall assleep", decode_down_coef(get_config()->down_coef), NULL);
+            break;
+        case 4:
+            menu_cell_basic_draw(ctx, cell_layer, "Sensitivity", decode_up_coef(get_config()->up_coef), NULL);
+            break;
+        case 5:
+            menu_cell_title_draw(ctx, cell_layer, "Version: 1.5");
             break;
     }
 }
 
 // Here we capture when a user selects a menu item
 void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
+    float coefd = get_config()->down_coef;
+    float coefu = get_config()->up_coef;
+    
     switch (cell_index->row) {
         case 0:
             show_alarm_config();
@@ -72,6 +107,32 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
             hide_action_menu();
             break;
         case 3:
+            
+            if (coefd == DOWN_COEF_SLOW) {
+                set_config_down_coef(DOWN_COEF_NORMAL);
+            } else if (coefd == DOWN_COEF_NORMAL) {
+                set_config_down_coef(DOWN_COEF_FAST);
+            } else if (coefd == DOWN_COEF_FAST) {
+                set_config_down_coef(DOWN_COEF_SLOW);
+            } else {
+                set_config_down_coef(DOWN_COEF_NORMAL);
+            }
+            menu_layer_reload_data(s_menulayer);
+            break;
+        case 4:
+            
+            if (coefu == UP_COEF_NOTSENSITIVE) {
+                set_config_up_coef(UP_COEF_NORMAL);
+            } else if (coefu == UP_COEF_NORMAL) {
+                set_config_up_coef(UP_COEF_VERYSENSITIVE);
+            } else if (coefu == UP_COEF_VERYSENSITIVE) {
+                set_config_up_coef(UP_COEF_NOTSENSITIVE);
+            } else {
+                set_config_up_coef(UP_COEF_NORMAL);
+            }
+            menu_layer_reload_data(s_menulayer);
+            break;
+        case 5:
             // Do nothing for version
             break;
     }

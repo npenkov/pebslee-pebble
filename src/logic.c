@@ -50,9 +50,6 @@ const int DELTA = 0;
 // For debugging purposes - this is the interval that current state is printed in console
 const int REPORTING_STEP_MS = 20000;
 
-const float GO_UP_COEFICENT = 1.5;
-const float GO_DOWN_COEFICENT = 0.7;
-
 #define DEEP_SLEEP_THRESHOLD 100
 #define REM_SLEEP_THRESHOLD 101
 #define LIGHT_THRESHOLD 800
@@ -100,12 +97,35 @@ void set_config_end_time(uint8_t a_hour, uint8_t a_min) {
     config.end_wake_hour = a_hour;
     config.end_wake_min = a_min;
 }
+void set_config_up_coef(int coef) {
+    config.up_coef = coef;
+}
+void set_config_down_coef(int coef) {
+    config.down_coef = coef;
+}
+
 
 void persist_write_config() {
+#ifdef DEBUG
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist config with up/down : %d/%d", config.up_coef, config.down_coef);
+#endif
     persist_write_data(CONFIG_PERSISTENT_KEY, &config, sizeof(config));
 }
 void persist_read_config() {
     persist_read_data(CONFIG_PERSISTENT_KEY, &config, sizeof(config));
+    if (config.up_coef != UP_COEF_NOTSENSITIVE &&
+        config.up_coef != UP_COEF_NORMAL &&
+        config.up_coef != UP_COEF_VERYSENSITIVE) {
+        config.up_coef = UP_COEF_NORMAL;
+    }
+    if (config.down_coef != DOWN_COEF_SLOW &&
+        config.down_coef != DOWN_COEF_NORMAL &&
+        config.down_coef != DOWN_COEF_FAST) {
+        config.down_coef = DOWN_COEF_NORMAL;
+    }
+#ifdef DEBUG
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Read config with up/down : %d/%d", config.up_coef, config.down_coef);
+#endif
 }
 
 void start_sleep_data_capturing() {
@@ -399,8 +419,8 @@ static void persist_motion() {
     
     int med_val = abs(motion_peek_in_min - sleep_data.minutes_value[sleep_data.count_values])/2;
     uint16_t median_peek = (motion_peek_in_min - sleep_data.minutes_value[sleep_data.count_values]) > 0
-    ? sleep_data.minutes_value[sleep_data.count_values] + (med_val*GO_UP_COEFICENT)
-    : sleep_data.minutes_value[sleep_data.count_values] - (med_val*GO_DOWN_COEFICENT);
+    ? sleep_data.minutes_value[sleep_data.count_values] + (med_val*((float)config.up_coef/10))
+    : sleep_data.minutes_value[sleep_data.count_values] - (med_val*((float)config.down_coef/10));
     
     for (int i = 1; i < COUNT_TRESHOLDS; i++) {
         if (median_peek > thresholds[i-1] && median_peek <= thresholds[i]) {
@@ -412,10 +432,12 @@ static void persist_motion() {
     
     
     sleep_data.count_values += 1;
-    sleep_data.minutes_value[sleep_data.count_values] = median_peek;
+    
+    //sleep_data.minutes_value[sleep_data.count_values] = median_peek;
+    sleep_data.minutes_value[sleep_data.count_values] = motion_peek_in_min;
     
 #ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist motion %d/%u - sleep phase: %s", med_val, median_peek, decode_phase(current_sleep_phase));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist motion %u/%d/%u - sleep phase: %s", motion_peek_in_min, med_val, median_peek, decode_phase(current_sleep_phase));
     APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Sleep data ==");
     dump_current_state();
 #endif

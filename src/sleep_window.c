@@ -278,10 +278,43 @@ static void select_long_click_release_handler(ClickRecognizerRef recognizer, voi
     show_action_menu();
 }
 
+
+// BACK
+static void back_long_click_handler(ClickRecognizerRef recognizer, void *context) {
+    call_stop_alarm_if_running();
+    if (get_config()->status != STATUS_ACTIVE) {
+        hide_sleep_window();
+    }
+}
+
+static void back_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
+    call_stop_alarm_if_running();
+    if (get_config()->status != STATUS_ACTIVE) {
+        hide_sleep_window();
+    }
+}
+
+static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
+    call_stop_alarm_if_running();
+    if (get_config()->status != STATUS_ACTIVE) {
+        hide_sleep_window();
+    }
+}
+
+
 static void config_provider(void *context) {
+    // BACK button
+    window_long_click_subscribe(BUTTON_ID_BACK, 700, back_long_click_handler, back_long_click_release_handler);
+    window_single_click_subscribe(BUTTON_ID_BACK, back_click_handler);
+    
+    // UP button
     window_long_click_subscribe(BUTTON_ID_UP, 700, up_long_click_handler, up_long_click_release_handler);
+    
+    // SELECT/middle button
     window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
     window_long_click_subscribe(BUTTON_ID_SELECT, 700, select_long_click_handler, select_long_click_release_handler);
+    
+    // DOWN button
     window_long_click_subscribe(BUTTON_ID_DOWN, 700, down_long_click_handler, down_long_click_release_handler);
 }
 

@@ -21,6 +21,12 @@ for more details visit http://www.pebslee.com/
 
 # Version information
 
+## v.1.5
+
+* Back button on main windows works only when sleep is not active (stopped) - can be used to light up display while active
+* Sensitivity of falling asleep (slow, normal, and fast)
+* Sensitivity of movement (not sensitive, normal, very sensitive)
+
 ## v.1.4
 
 * Fix stats persistence size (10)
