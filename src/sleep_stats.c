@@ -179,13 +179,14 @@ static void set_hours_minutes(TextLayer *layer, uint16_t minutes) {
 #endif
     
     text_layer_set_text(layer, tbuf);
-//    free(tbuf);
+    //free(tbuf); // ??
 }
 
 static struct tm * get_time(uint32_t *val) {
     time_t *tt = malloc(sizeof(time_t));
     memcpy(tt, val, sizeof(uint32_t));
     struct tm *tms = localtime(tt);
+    //free(tt);// ??
     return tms;
 }
 
@@ -208,7 +209,7 @@ static void update_ui_stat_with_sd(StatData *sd) {
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "setDate: %s", tbuf);
 #endif
-//    free(tbuf);
+    //free(tbuf); // ??
     
     sz = sizeof("00:00");
     
@@ -219,6 +220,7 @@ static void update_ui_stat_with_sd(StatData *sd) {
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "from: %s", tbuffrom);
 #endif
+    //free(tbuffrom); // ??
     
     char *tbufto = malloc(sz);
     struct tm *tte = get_time(&(sd->end_time));
@@ -227,6 +229,7 @@ static void update_ui_stat_with_sd(StatData *sd) {
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "to: %s", tbufto);
 #endif
+    //free(tbufto); // ??
 }
 
 static void update_ui_stat_values() {
@@ -245,6 +248,9 @@ static void update_ui_stat_values() {
 
 static void handle_window_unload(Window* window) {
     destroy_ui();
+    for (int i = 0; i < count_recs; i++) {
+        free(stats_data[i]);
+    }
     free(stats_data);
 }
 

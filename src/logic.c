@@ -416,11 +416,12 @@ void check_alarm() {
 static void persist_motion() {
     if (sleep_data.count_values >= MAX_COUNT-1)
         return;
+    uint16_t prev_value = sleep_data.minutes_value[sleep_data.count_values];
     
-    int med_val = abs(motion_peek_in_min - sleep_data.minutes_value[sleep_data.count_values])/2;
-    uint16_t median_peek = (motion_peek_in_min - sleep_data.minutes_value[sleep_data.count_values]) > 0
-    ? sleep_data.minutes_value[sleep_data.count_values] + (med_val*((float)config.up_coef/10))
-    : sleep_data.minutes_value[sleep_data.count_values] - (med_val*((float)config.down_coef/10));
+    int med_val = abs(motion_peek_in_min - prev_value)/2;
+    uint16_t median_peek = (motion_peek_in_min - prev_value) > 0
+    ? prev_value + (med_val*((float)config.up_coef/10))
+    : prev_value - (med_val*((float)config.down_coef/10));
     
     for (int i = 1; i < COUNT_TRESHOLDS; i++) {
         if (median_peek > thresholds[i-1] && median_peek <= thresholds[i]) {
@@ -430,11 +431,12 @@ static void persist_motion() {
     }
     sleep_data.stat[current_sleep_phase-1] += 1;
     
-    
     sleep_data.count_values += 1;
     
-    //sleep_data.minutes_value[sleep_data.count_values] = median_peek;
-    sleep_data.minutes_value[sleep_data.count_values] = motion_peek_in_min;
+    // Store modified motion data
+    sleep_data.minutes_value[sleep_data.count_values] = median_peek;
+    // Alternative - store original value
+    //sleep_data.minutes_value[sleep_data.count_values] = motion_peek_in_min;
     
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist motion %u/%d/%u - sleep phase: %s", motion_peek_in_min, med_val, median_peek, decode_phase(current_sleep_phase));

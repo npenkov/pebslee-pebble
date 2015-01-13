@@ -27,7 +27,7 @@
 #ifndef LOGIC_H_
 #define LOGIC_H_
 
-#define DEBUG 1
+//#define DEBUG 1
 
 #define MODE_WORKDAY 0
 #define MODE_WEEKEND 1
@@ -42,12 +42,12 @@
 
 #define MEASURE_COEFICENT 255/5000;
 
-#define UP_COEF_NOTSENSITIVE    12
+#define UP_COEF_NOTSENSITIVE    10
 #define UP_COEF_NORMAL          15
-#define UP_COEF_VERYSENSITIVE   20
+#define UP_COEF_VERYSENSITIVE   17
 
-#define DOWN_COEF_SLOW      05
-#define DOWN_COEF_NORMAL    07
+#define DOWN_COEF_SLOW      5
+#define DOWN_COEF_NORMAL    7
 #define DOWN_COEF_FAST      10
 
 typedef struct {

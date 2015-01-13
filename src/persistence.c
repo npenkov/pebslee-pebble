@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <pebble.h>
 
+#include "constants.h"
 #include "persistence.h"
 #include "logic.h"
 
@@ -108,49 +109,55 @@ void store_data(SleepData* data) {
         persist_write_data(STAT_START + csd - 1, new_stat, sizeof(StatData));
         persist_write_int(COUNT_STATS_KEY, csd);
     }
+    for (int i = 0; i < csd; i++) {
+        free(stat_data[i]);
+    }
+    free(stat_data);
+    free(new_stat);
 }
 
 SleepData* read_last_sleep_data() {
     // Read the stats from DB
     int csd = count_stat_data();
     StatData *stat = malloc(sizeof(StatData));
-    persist_read_data(STAT_START+csd-1, stat, sizeof(StatData));
+    SleepData *last_sd = malloc(sizeof(SleepData));
     
-    // Create using stats
-    SleepData *sleep_data = malloc(sizeof(SleepData));
-    sleep_data->start_time = stat->start_time;
-    sleep_data->end_time = stat->end_time;
+    persist_read_data(STAT_START+csd-1, stat, sizeof(StatData));
+
+    last_sd->start_time = stat->start_time;
+    last_sd->end_time = stat->end_time;
+    
     for (int i = 0; i < COUNT_PHASES; i++) {
-        sleep_data->stat[i] = stat->stat[i];
+        last_sd->stat[i] = stat->stat[i];
     }
+    free(stat);
     
     // Read values
-    sleep_data->count_values = persist_read_int(PERSISTENT_COUNT_KEY);
+    last_sd->count_values = persist_read_int(PERSISTENT_COUNT_KEY);
     
-    
-    uint8_t *values = malloc(sizeof(uint8_t) * sleep_data->count_values);
+    uint8_t *values = malloc(sizeof(uint8_t) * last_sd->count_values);
     // Now write the values
     //#define PERSISTENT_VALUES_KEY 2
     // use 2, 3, 4 - every each with 240 bytes
-    int chunks = sleep_data->count_values / MAX_PERSIST_BUFFER;
-    if (sleep_data->count_values % MAX_PERSIST_BUFFER > 0)
+    int chunks = last_sd->count_values / MAX_PERSIST_BUFFER;
+    if (last_sd->count_values % MAX_PERSIST_BUFFER > 0)
         chunks++;
     
     for (int i = 0; i < chunks; i++) {
         int size = MAX_PERSIST_BUFFER;
         if (i == chunks - 1) { // Last chunk
-            if (sleep_data->count_values % MAX_PERSIST_BUFFER > 0) {
-                size = sleep_data->count_values % MAX_PERSIST_BUFFER;
+            if (last_sd->count_values % MAX_PERSIST_BUFFER > 0) {
+                size = last_sd->count_values % MAX_PERSIST_BUFFER;
             }
         }
         persist_read_data(PERSISTENT_VALUES_KEY+i, &values[i*MAX_PERSIST_BUFFER], size);
     }
-    for (int i = 0; i < sleep_data->count_values; i++) {
-        sleep_data->minutes_value[i] = values[i]; // Cast from uint8 to uint16
+    for (int i = 0; i < last_sd->count_values; i++) {
+        last_sd->minutes_value[i] = values[i]; // Cast from uint8 to uint16
     }
     free(values);
     
-    return sleep_data;
+    return last_sd;
 }
 
 /*
@@ -226,6 +233,7 @@ void migrate_version() {
                 }
             }
             persist_write_int(COUNT_STATS_KEY, lastCount);
+            free(sds);
         }
         // Migrate sleep data structure
         if (version < current_db_version) {
