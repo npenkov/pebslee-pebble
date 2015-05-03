@@ -24,6 +24,7 @@
 #include "logic.h"
 #include "persistence.h"
 #include "sleep_window.h"
+#include "localize.h"
 
 static void handle_init(void) {
     // Migrate DB
@@ -53,6 +54,7 @@ static void handle_deinit(void) {
 }
 
 int main(void) {
+    locale_init();
 	handle_init();
 	app_event_loop();
 	handle_deinit();

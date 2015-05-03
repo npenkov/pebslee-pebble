@@ -24,6 +24,7 @@
 #include <pebble.h>
 #include "logic.h"
 #include "persistence.h"
+#include "localize.h"
 
 static int current_index = 0;
 static int count_recs = 0;
@@ -51,7 +52,9 @@ static TextLayer *s_tv_light;
 
 static void initialise_ui(void) {
     s_window = window_create();
+#ifndef PBL_SDK_3    
     window_set_fullscreen(s_window, false);
+#endif
     
     s_res_gothic_18_bold = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
     s_res_img_arrow_right_black_8x14 = gbitmap_create_with_resource(RESOURCE_ID_IMG_ARROW_RIGHT_BLACK_8X14);
@@ -107,19 +110,19 @@ static void initialise_ui(void) {
     
     // s_tl_total
     s_tl_total = text_layer_create(GRect(1, 50, 71, 20));
-    text_layer_set_text(s_tl_total, "TOTAL:");
+    text_layer_set_text(s_tl_total, _("TOTAL:"));
     text_layer_set_font(s_tl_total, s_res_gothic_18_bold);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_total);
     
     // s_tl_deep
     s_tl_deep = text_layer_create(GRect(1, 76, 71, 20));
-    text_layer_set_text(s_tl_deep, "Deep:");
+    text_layer_set_text(s_tl_deep, _("Deep:"));
     text_layer_set_font(s_tl_deep, s_res_gothic_18_bold);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_deep);
     
     // s_tl_light
     s_tl_light = text_layer_create(GRect(1, 104, 71, 20));
-    text_layer_set_text(s_tl_light, "Light:");
+    text_layer_set_text(s_tl_light, _("Light:"));
     text_layer_set_font(s_tl_light, s_res_gothic_18_bold);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_light);
     
@@ -235,6 +238,9 @@ static void update_ui_stat_with_sd(StatData *sd) {
 static void update_ui_stat_values() {
     stats_data = read_stat_data();
     count_recs = count_stat_data();
+#ifdef DEBUG
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Count stats data %d", count_recs);
+#endif
     if (stats_data == NULL || count_recs <= 0) {
         hide_sleep_stats();
         return;

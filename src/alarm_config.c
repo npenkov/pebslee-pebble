@@ -23,6 +23,7 @@
 #include <pebble.h>
 #include "alarm_config.h"
 #include "logic.h"
+#include "localize.h"
 
 #define NONE_SELECTED 0
 #define START_HOUR_SELECTED 1
@@ -54,7 +55,11 @@ static BitmapLayer *s_bm_end_m_up;
 
 static void initialise_ui(void) {
     s_window = window_create();
+
+#ifndef PBL_SDK_3    
     window_set_fullscreen(s_window, false);
+#endif
+
     
     s_res_bitham_30_black = fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK);
     s_res_img_up_arrow_black_8x14 = gbitmap_create_with_resource(RESOURCE_ID_IMG_UP_ARROW_BLACK_8X14);

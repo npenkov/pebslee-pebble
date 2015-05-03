@@ -12,7 +12,7 @@
 #include "alarm_config.h"
 #include "persistence.h"
 #include "logic.h"
-
+#include "localize.h"
 
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
@@ -28,7 +28,7 @@ static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data
 // Each section has a number of items;  we use a callback to specify this
 // You can also dynamically add and remove items using this
 static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) {
-    return 6;
+    return 7;
 }
 
 // A callback is used to specify the height of the section header
@@ -40,27 +40,40 @@ static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t s
 
 static char* decode_down_coef(float coef) {
     if (coef == DOWN_COEF_SLOW) {
-        return "Slow";
+        return _("Slow");
     } else if (coef == DOWN_COEF_NORMAL) {
-        return "Normal";
+        return _("Normal");
     } else if (coef == DOWN_COEF_FAST) {
-        return "Fast";
+        return _("Fast");
     } else {
-        return "Unknown";
+        return _("Unknown");
     }
 }
 
 static char* decode_up_coef(float coef) {
     if (coef == UP_COEF_NOTSENSITIVE) {
-        return "Not sensitive";
+        return _("Not sensitive");
     } else if (coef == UP_COEF_NORMAL) {
-        return "Normal";
+        return _("Normal");
     } else if (coef == UP_COEF_VERYSENSITIVE) {
-        return "Very sensitive";
+        return _("Very sensitive");
     } else {
-        return "Unknown";
+        return _("Unknown");
     }
 }
+
+static char* decode_snooze(char snoozeMin) {
+    if (snoozeMin == 0) {
+        return _("Not active");
+    } else if (snoozeMin == 5) {
+        return _("5 min");
+    } else if (snoozeMin == 10) {
+        return _("10 min");
+    } else {
+        return _("Unknown");
+    }
+}
+
 
 // Here we draw what each header is
 //static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
@@ -70,22 +83,25 @@ static char* decode_up_coef(float coef) {
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
     switch (cell_index->row) {
         case 0:
-            menu_cell_title_draw(ctx, cell_layer, "Set alarm time");
+            menu_cell_basic_draw(ctx, cell_layer, _("Set alarm time"), NULL, NULL);
             break;
         case 1:
-            menu_cell_title_draw(ctx, cell_layer, "View stats");
+            menu_cell_basic_draw(ctx, cell_layer, _("View stats"), NULL, NULL);
             break;
         case 2:
-            menu_cell_title_draw(ctx, cell_layer, "Clear stats");
+            menu_cell_basic_draw(ctx, cell_layer, _("Clear stats"), NULL, NULL);
             break;
         case 3:
-            menu_cell_basic_draw(ctx, cell_layer, "Fall asleep", decode_down_coef(get_config()->down_coef), NULL);
+            menu_cell_basic_draw(ctx, cell_layer, _("Fall asleep"), decode_down_coef(get_config()->down_coef), NULL);
             break;
         case 4:
-            menu_cell_basic_draw(ctx, cell_layer, "Sensitivity", decode_up_coef(get_config()->up_coef), NULL);
+            menu_cell_basic_draw(ctx, cell_layer, _("Sensitivity"), decode_up_coef(get_config()->up_coef), NULL);
             break;
         case 5:
-            menu_cell_title_draw(ctx, cell_layer, "Version: 1.5");
+            menu_cell_basic_draw(ctx, cell_layer, _("Snooze"), decode_snooze(get_config()->snooze), NULL);
+            break;
+        case 6:
+            menu_cell_basic_draw(ctx, cell_layer, _("Version: 1.6"), NULL, NULL);
             break;
     }
 }
@@ -94,6 +110,7 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
 void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
     float coefd = get_config()->down_coef;
     float coefu = get_config()->up_coef;
+    char snooze = get_config()->snooze;
     
     switch (cell_index->row) {
         case 0:
@@ -133,6 +150,20 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
             menu_layer_reload_data(s_menulayer);
             break;
         case 5:
+            
+            if (snooze == 0) {
+                set_config_snooze(5);
+            } else if (snooze == 5) {
+                set_config_snooze(10);
+            } else if (snooze == 10) {
+                set_config_snooze(0);
+            } else {
+                set_config_snooze(0);
+            }
+            menu_layer_reload_data(s_menulayer);
+            break;
+    
+        case 6:
             // Do nothing for version
             break;
     }
@@ -140,7 +171,11 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
 
 static void initialise_ui(void) {
     s_window = window_create();
+
+#ifndef PBL_SDK_3    
     window_set_fullscreen(s_window, false);
+#endif
+
     
     // s_menulayer
     s_menulayer = menu_layer_create(GRect(0, 0, 144, 152));

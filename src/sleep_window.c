@@ -23,9 +23,9 @@
 #include <pebble.h>
 #include "sleep_window.h"
 #include "logic.h"
-#include "language.h"
 #include "alarm_config.h"
 #include "action_menu.h"
+#include "localize.h"
 
 // First time update date field
 static int forceUpdateDate = YES;
@@ -55,7 +55,11 @@ static BitmapLayer *s_bm_arrow_right_select;
 static void initialise_ui(void) {
     s_window = window_create();
     window_set_background_color(s_window, GColorBlack);
+
+#ifndef PBL_SDK_3    
     window_set_fullscreen(s_window, false);
+#endif
+
     
     s_res_bitham_42_bold = fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD);
     s_res_roboto_condensed_21 = fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21);
@@ -74,7 +78,7 @@ static void initialise_ui(void) {
     s_tl_status = text_layer_create(GRect(0, 126, 144, 26));
     text_layer_set_background_color(s_tl_status, GColorClear);
     text_layer_set_text_color(s_tl_status, GColorWhite);
-    text_layer_set_text(s_tl_status, "not tracking");
+    text_layer_set_text(s_tl_status, _("not tracking"));
     text_layer_set_text_alignment(s_tl_status, GTextAlignmentCenter);
     text_layer_set_font(s_tl_status, s_res_roboto_condensed_21);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_status);
@@ -90,7 +94,7 @@ static void initialise_ui(void) {
     s_tl_mode = text_layer_create(GRect(1, 21, 144, 28));
     text_layer_set_background_color(s_tl_mode, GColorClear);
     text_layer_set_text_color(s_tl_mode, GColorWhite);
-    text_layer_set_text(s_tl_mode, "with alarm");
+    text_layer_set_text(s_tl_mode, _("with alarm"));
     text_layer_set_text_alignment(s_tl_mode, GTextAlignmentCenter);
     text_layer_set_font(s_tl_mode, s_res_roboto_condensed_21);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_mode);
@@ -153,11 +157,11 @@ static void destroy_ui(void) {
 // *********************** Update UI fuctions *********************
 static void update_mode() {
     if (get_config()->mode == MODE_WEEKEND) {
-        text_layer_set_text(s_tl_mode, MODE_WEEKEND_STR);
+        text_layer_set_text(s_tl_mode, _("no alarm"));
         bitmap_layer_set_bitmap(s_bm_clock, s_res_img_empty_22x25);
         text_layer_set_text(s_textlayer_1, "");
     } else if (get_config()->mode == MODE_WORKDAY) {
-        text_layer_set_text(s_tl_mode, MODE_WORKDAY_STR);
+        text_layer_set_text(s_tl_mode, _("with alarm"));
         bitmap_layer_set_bitmap(s_bm_clock, s_res_img_clock_white_22x25);
         static char buffer[] = "00:00 - 00:00";
         snprintf(buffer, sizeof(buffer), "%02d:%02d - %02d:%02d", get_config()->start_wake_hour, get_config()->start_wake_min, get_config()->end_wake_hour, get_config()->end_wake_min);
@@ -167,9 +171,9 @@ static void update_mode() {
 
 static void update_status() {
     if (get_config()->status == STATUS_ACTIVE) {
-        text_layer_set_text(s_tl_status, STATUS_ACTIVE_STR);
+        text_layer_set_text(s_tl_status, _("track sleep"));
     } else if (get_config()->status == STATUS_NOTACTIVE) {
-        text_layer_set_text(s_tl_status, STATUS_NOTACTIVE_STR);
+        text_layer_set_text(s_tl_status, _("not tracking"));
     }
 }
 

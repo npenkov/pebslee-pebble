@@ -27,6 +27,7 @@
 #include "logic.h"
 #include "persistence.h"
 #include "syncprogress_window.h"
+#include "localize.h"
 
 // ================== Communication ======================
 static AppTimer *timerSync;

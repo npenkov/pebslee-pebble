@@ -24,6 +24,7 @@
 #include <pebble.h>
 
 #include "syncprogress_window.h"
+#include "localize.h"
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
@@ -33,7 +34,10 @@ static BitmapLayer *s_bmp_sync;
 static void initialise_ui(void) {
     s_window = window_create();
     window_set_background_color(s_window, GColorBlack);
-    window_set_fullscreen(s_window, true);
+    
+#ifndef PBL_SDK_3    
+    window_set_fullscreen(s_window, false);
+#endif
     
     s_res_img_sync = gbitmap_create_with_resource(RESOURCE_ID_IMG_SYNC_PROGRESS);
     // s_bmp_sync

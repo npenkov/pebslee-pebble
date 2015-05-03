@@ -24,9 +24,9 @@
 #include "logic.h"
 #include "sleep_window.h"
 #include "sleep_stats.h"
-#include "language.h"
 #include "comm.h"
 #include "persistence.h"
+#include "localize.h"
 
 static uint8_t vib_count;
 static bool alarm_in_motion = NO;
@@ -103,6 +103,9 @@ void set_config_up_coef(int coef) {
 void set_config_down_coef(int coef) {
     config.down_coef = coef;
 }
+void set_config_snooze(char snooze) {
+    config.snooze  = snooze;
+}
 
 
 void persist_write_config() {
@@ -152,15 +155,15 @@ void start_sleep_data_capturing() {
 static char* decode_phase(int a_phase) {
     switch (a_phase) {
         case DEEP:
-            return DEEP_SLEEP_STATUS_STR;
+            return _("Deep sleep");
         case REM:
-            return REM_SLEEL_STATUS_STR;
+            return _("REM sleep");
         case LIGHT:
-            return LIGHT_SLEEP_STATUS_STR;
+            return _("Light sleep");
         case AWAKE:
-            return AWAKE_STATUS_STR;
+            return _("Awake");
         default:
-            return UNKNOWN_STATUS_STR;
+            return _("unknown");
             break;
     }
 }

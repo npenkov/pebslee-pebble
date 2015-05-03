@@ -194,7 +194,7 @@ StatData** read_stat_data() {
  * Current version is 2
  */
 void migrate_version() {
-    const int current_db_version = 4;
+    const int current_db_version = 5;
     if (!persist_exists(VERSION_KEY)) {
         // In version 1.0 we have 4 values
         if (persist_exists(1))
@@ -243,6 +243,7 @@ void migrate_version() {
             persist_read_config();
             set_config_up_coef(UP_COEF_NORMAL);
             set_config_down_coef(DOWN_COEF_NORMAL);
+            set_config_snooze(0);
             persist_write_config();
             persist_write_int(VERSION_KEY, current_db_version);
         }
