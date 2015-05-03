@@ -20,43 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "pebble.h"
-#include "logic.h"
-#include "persistence.h"
-#include "sleep_window.h"
-#include "localize.h"
+#ifndef PebSlee_alarm_window_h
+#define PebSlee_alarm_window_h
 
-static void handle_init(void) {
-    // Migrate DB
-    migrate_version();
-    
-    accel_data_service_subscribe(0, NULL);
-	show_sleep_window();
-    int inbox_size = app_message_inbox_size_maximum();
-    int outbox_size = app_message_outbox_size_maximum();
-    app_message_open(inbox_size, outbox_size);
-    set_outbox_size(outbox_size);
-    
-    app_message_register_inbox_received(in_received_handler);
-    app_message_register_inbox_dropped(in_dropped_handler);
-    app_message_register_outbox_sent(out_sent_handler);
-    app_message_register_outbox_failed(out_failed_handler);
-}
+void show_alarm_window(void);
+void hide_alarm_window(void);
 
-static void handle_deinit(void) {
-    accel_data_service_unsubscribe();
-    hide_sleep_window();
-    
-    if (get_config()->status == STATUS_ACTIVE) {
-        set_config_status(STATUS_NOTACTIVE);
-        notify_status_update(get_config()->status);
-    }
-    freeLogic();
-}
-
-int main(void) {
-    locale_init();
-	handle_init();
-	app_event_loop();
-	handle_deinit();
-}
+#endif

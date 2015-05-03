@@ -57,6 +57,16 @@
         "type": "png"
       },
       {
+          "file": "images/alarm_black.png",
+          "name": "IMG_ALARM_BLACK",
+          "type": "png"
+      },
+      {
+          "file": "images/alarm_white.png",
+          "name": "IMG_ALARM_WHITE",
+          "type": "png"
+      },
+      {
         "type": "raw",
         "name": "LOCALE_ENGLISH",
         "file": "locale_english.bin"

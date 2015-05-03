@@ -2,7 +2,6 @@
   
 DictionaryIterator s_locale_dict;
 
-
 void locale_init(void) {
   //hard-coded for testing 
   // const char* locale_str = "es";
@@ -10,7 +9,9 @@ void locale_init(void) {
   // Detect system locale
   const char* locale_str = i18n_get_system_locale();
   // Also set the locale for all
+#ifdef PBL_SDK_3
   char *sys_locale = setlocale(LC_ALL, locale_str);
+#endif
     
   ResHandle locale_handle = NULL;
   int locale_size = 0;

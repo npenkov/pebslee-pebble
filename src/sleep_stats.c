@@ -28,7 +28,7 @@
 
 static int current_index = 0;
 static int count_recs = 0;
-static StatData **stats_data;
+static StatData *stats_data;
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
@@ -168,95 +168,98 @@ static void destroy_ui(void) {
 // END AUTO-GENERATED UI CODE
 
 
-static void set_hours_minutes(TextLayer *layer, uint16_t minutes) {
-    int sz = sizeof("00:00");
-    char *tbuf = malloc(sz);
-    int h = minutes/60;
-    int m = minutes%60;
-    snprintf(tbuf, sz, "%02d:%02d", h, m);
-
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "setLayer: param minutes %d", minutes);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "setLayer: %02d:%02d", h, m);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "setLayer: %s", tbuf);
-#endif
+static void set_stat_light() {
+    uint16_t minutes = stats_data->stat[LIGHT-1];
+    int h = (minutes == 0 ? 0 : minutes / 60);
+    int m = (minutes == 0 ? 0 : minutes % 60);
     
-    text_layer_set_text(layer, tbuf);
-    //free(tbuf); // ??
+    static char light_lbl[] = "00:00";
+    snprintf(light_lbl, sizeof(light_lbl), "%02d:%02d", h, m);
+    
+    D("setLayer: param minutes %d set %02d:%02d", minutes, h, m);
+    
+    text_layer_set_text(s_tv_light, light_lbl);
 }
 
+static void set_stat_deep() {
+    uint16_t minutes = stats_data->stat[DEEP-1];
+    int h = (minutes == 0 ? 0 : minutes / 60);
+    int m = (minutes == 0 ? 0 : minutes % 60);
+    
+    static char deep_lbl[] = "00:00";
+    snprintf(deep_lbl, sizeof(deep_lbl), "%02d:%02d", h, m);
+    
+    D("setLayer: param minutes %d set %02d:%02d", minutes, h, m);
+    
+    text_layer_set_text(s_tv_deep, deep_lbl);
+}
+
+static void set_stat_total() {
+    uint16_t minutes = stats_data->stat[LIGHT-1] + stats_data->stat[DEEP-1];
+    int h = (minutes == 0 ? 0 : minutes / 60);
+    int m = (minutes == 0 ? 0 : minutes % 60);
+    
+    static char total_lbl[] = "00:00";
+    snprintf(total_lbl, sizeof(total_lbl), "%02d:%02d", h, m);
+    
+    D("setLayer: param minutes %d set %02d:%02d", minutes, h, m);
+    
+    text_layer_set_text(s_tv_total, total_lbl);
+}
+
+
+
 static struct tm * get_time(uint32_t *val) {
-    time_t *tt = malloc(sizeof(time_t));
-    memcpy(tt, val, sizeof(uint32_t));
-    struct tm *tms = localtime(tt);
+    D("getTime: %ld", *val);
+    struct tm *tms = localtime((const time_t *)val);
     //free(tt);// ??
     return tms;
 }
 
-static void update_ui_stat_with_sd(StatData *sd) {
+static void update_ui_stat_with_sd() {
     // TMP
     //uint16_t total = sleep_data->stat[AWAKE-1] + sleep_data->stat[LIGHT-1] + sleep_data->stat[DEEP-1];
-    uint16_t total = sd->stat[LIGHT-1] + sd->stat[DEEP-1];
+    //uint16_t total = sd->stat[LIGHT-1] + sd->stat[DEEP-1];
     
     //set_hours_minutes(s_val_awake, sleep_data->stat[AWAKE-1]);
-    set_hours_minutes(s_tv_light, sd->stat[LIGHT-1]);
-    set_hours_minutes(s_tv_deep, sd->stat[DEEP-1]);
-    set_hours_minutes(s_tv_total, total);
-
-    struct tm *ttd = get_time(&(sd->start_time));
-    int sz = sizeof("Jan 01");
-    char *tbuf = malloc(sz);
-
-    strftime(tbuf, sz,"%d %b", ttd);
-    text_layer_set_text(s_tl_date, tbuf);
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "setDate: %s", tbuf);
-#endif
-    //free(tbuf); // ??
+    set_stat_light();
+    set_stat_deep();
+    set_stat_total();
     
-    sz = sizeof("00:00");
+    struct tm *ttd = get_time(&(stats_data->start_time));
+    static char date_str[] = "Xxx 00";
+    strftime(date_str, sizeof(date_str),"%d %b", ttd);
+    text_layer_set_text(s_tl_date, date_str);
     
-    char *tbuffrom = malloc(sz);
-    struct tm *ttb = get_time(&(sd->start_time));
-    strftime(tbuffrom, sz, "%H:%M", ttb);
-    text_layer_set_text(s_tl_from, tbuffrom);
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "from: %s", tbuffrom);
-#endif
-    //free(tbuffrom); // ??
+    D("setDate: %s", tbuf);
     
-    char *tbufto = malloc(sz);
-    struct tm *tte = get_time(&(sd->end_time));
-    strftime(tbufto, sz, "%H:%M", tte);
-    text_layer_set_text(s_tl_to, tbufto);
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "to: %s", tbufto);
-#endif
-    //free(tbufto); // ??
+    static char from_str[] = "00:00";
+    strftime(from_str, sizeof(from_str), "%H:%M", ttd);
+    text_layer_set_text(s_tl_from, from_str);
+    
+    static char to_str[] = "00:00";
+    struct tm *tte = get_time(&(stats_data->end_time));
+    strftime(to_str, sizeof(to_str), "%H:%M", tte);
+    text_layer_set_text(s_tl_to, to_str);
+    // D("to: %s", tbufto);
 }
 
 static void update_ui_stat_values() {
-    stats_data = read_stat_data();
     count_recs = count_stat_data();
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Count stats data %d", count_recs);
-#endif
-    if (stats_data == NULL || count_recs <= 0) {
+    
+    D("Count stats data %d. Update stats with index %d", count_recs, count_recs - 1);
+
+    if (count_recs <= 0) {
         hide_sleep_stats();
         return;
     }
     current_index = count_recs - 1;
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Update stats with index %d", current_index);
-#endif
-    update_ui_stat_with_sd(stats_data[current_index]);
+    stats_data = read_stat_data_rec(current_index);
+    update_ui_stat_with_sd();
 }
 
 static void handle_window_unload(Window* window) {
     destroy_ui();
-    for (int i = 0; i < count_recs; i++) {
-        free(stats_data[i]);
-    }
     free(stats_data);
 }
 
@@ -268,7 +271,9 @@ static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
     if (current_index > 0) {
         current_index--;
-        update_ui_stat_with_sd(stats_data[current_index]);
+        free(stats_data);
+        stats_data = read_stat_data_rec(current_index);
+        update_ui_stat_with_sd();
     }
 }
 
@@ -276,7 +281,9 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
     if (current_index < count_recs - 1) {
         current_index++;
-        update_ui_stat_with_sd(stats_data[current_index]);
+        free(stats_data);
+        stats_data = read_stat_data_rec(current_index);
+        update_ui_stat_with_sd();
     }
 }
 

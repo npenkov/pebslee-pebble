@@ -61,10 +61,11 @@ typedef struct {
 
 
 void store_data(SleepData* data);
-SleepData* read_last_sleep_data();
+void read_last_sleep_data(SleepData *sd);
 
 int count_stat_data();
 StatData** read_stat_data();
+StatData* read_stat_data_rec(int index);
 
 void migrate_version();
 

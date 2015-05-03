@@ -30,9 +30,6 @@
 // First time update date field
 static int forceUpdateDate = YES;
 
-static GBitmap *s_res_img_clock_white_22x25;
-
-
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
 static GFont s_res_bitham_42_bold;
@@ -41,6 +38,7 @@ static GBitmap *s_res_img_empty_22x25;
 static GBitmap *s_res_img_arrow_right_8x14;
 static GBitmap *s_res_img_arrow_left_8x14;
 static GBitmap *s_res_img_arrow_right_black_8x14;
+static GBitmap *s_res_img_clock_white_22x25;
 static TextLayer *s_tl_time;
 static TextLayer *s_tl_date;
 static TextLayer *s_tl_status;
@@ -151,6 +149,7 @@ static void destroy_ui(void) {
     gbitmap_destroy(s_res_img_arrow_right_8x14);
     gbitmap_destroy(s_res_img_arrow_left_8x14);
     gbitmap_destroy(s_res_img_arrow_right_black_8x14);
+    gbitmap_destroy(s_res_img_clock_white_22x25);
 }
 // END AUTO-GENERATED UI CODE
 
@@ -353,5 +352,15 @@ void hide_sleep_window(void) {
 void refresh_display(void) {
     update_mode();
     update_time();
+    update_status();
+}
+
+void toggle_sleep(void) {
+    if (get_config()->status == STATUS_ACTIVE) {
+        set_config_status(STATUS_NOTACTIVE);
+    } else {
+        set_config_status(STATUS_ACTIVE);
+    }
+    notify_status_update(get_config()->status);
     update_status();
 }

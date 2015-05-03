@@ -147,6 +147,7 @@ static void initialise_ui(void) {
 
 static void destroy_ui(void) {
     window_destroy(s_window);
+    
     text_layer_destroy(s_start_hour);
     text_layer_destroy(s_start_min);
     text_layer_destroy(s_end_hour);
@@ -180,18 +181,36 @@ static void set_layer_black_text(TextLayer *a_text_layer) {
     text_layer_set_background_color(a_text_layer, GColorClear);
 }
 
-static void set_number(TextLayer *a_text_layer, uint8_t number) {
-    char *buffer;
-    buffer = malloc(sizeof(char)*(2+1));
-    snprintf(buffer, sizeof(buffer), "%02d", number);
-    text_layer_set_text(a_text_layer, buffer);
+static void set_start_hour() {
+    static char bufferH1[] = "00";
+    snprintf(bufferH1, sizeof(bufferH1), "%02d", get_config()->start_wake_hour);
+    text_layer_set_text(s_start_hour, bufferH1);
 }
 
+static void set_start_min() {
+    static char bufferM1[] = "00";
+    snprintf(bufferM1, sizeof(bufferM1), "%02d", get_config()->start_wake_min);
+    text_layer_set_text(s_start_min, bufferM1);
+}
+
+static void set_end_hour() {
+    static char bufferH2[] = "00";
+    snprintf(bufferH2, sizeof(bufferH2), "%02d", get_config()->end_wake_hour);
+    text_layer_set_text(s_end_hour, bufferH2);
+}
+
+static void set_end_min() {
+    static char bufferM2[] = "00";
+    snprintf(bufferM2, sizeof(bufferM2), "%02d", get_config()->end_wake_min);
+    text_layer_set_text(s_end_min, bufferM2);
+}
+
+
 static void update_ui() {
-    set_number(s_start_hour, get_config()->start_wake_hour);
-    set_number(s_start_min, get_config()->start_wake_min);
-    set_number(s_end_hour, get_config()->end_wake_hour);
-    set_number(s_end_min, get_config()->end_wake_min);
+    set_start_hour();
+    set_start_min();
+    set_end_hour();
+    set_end_min();
     
     if (current_selection == START_HOUR_SELECTED) {
         set_layer_white_text(s_start_hour);
@@ -224,32 +243,32 @@ static void update_ui() {
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
     if (current_selection == START_HOUR_SELECTED) {
         increase_start_hour();
-        set_number(s_start_hour, get_config()->start_wake_hour);
+        set_start_hour();
     } else if (current_selection == START_MIN_SELECTED) {
         increase_start_min();
-        set_number(s_start_min, get_config()->start_wake_min);
+        set_start_min();
     } else if (current_selection == END_HOUR_SELECTED) {
         increase_end_hour();
-        set_number(s_end_hour, get_config()->end_wake_hour);
+        set_end_hour();
     } else if (current_selection == END_MIN_SELECTED) {
         increase_end_min();
-        set_number(s_end_min, get_config()->end_wake_min);
+        set_end_min();
     }
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
     if (current_selection == START_HOUR_SELECTED) {
         decrease_start_hour();
-        set_number(s_start_hour, get_config()->start_wake_hour);
+        set_start_hour();
     } else if (current_selection == START_MIN_SELECTED) {
         decrease_start_min();
-        set_number(s_start_min, get_config()->start_wake_min);
+        set_start_min();
     } else if (current_selection == END_HOUR_SELECTED) {
         decrease_end_hour();
-        set_number(s_end_hour, get_config()->end_wake_hour);
+        set_end_hour();
     } else if (current_selection == END_MIN_SELECTED) {
         decrease_end_min();
-        set_number(s_end_min, get_config()->end_wake_min);
+        set_end_min();
     }
 }
 
@@ -263,13 +282,13 @@ static void update_end_time_if_necessery() {
         endh = starth;
         endm = startm + 1;
         set_config_end_time(endh, endm);
-        set_number(s_end_hour, get_config()->end_wake_hour);
-        set_number(s_end_min, get_config()->end_wake_min);
+        set_end_hour();
+        set_end_min();
     } else {
         if (startm > endm) {
             endm = startm + 1;
             set_config_end_time(endh, endm);
-            set_number(s_end_min, get_config()->end_wake_min);
+            set_end_min();
         }
     }
     

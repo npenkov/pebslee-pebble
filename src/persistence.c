@@ -27,12 +27,6 @@
 #include "persistence.h"
 #include "logic.h"
 
-#ifdef DEBUG
-void dump_stat_data(StatData *sd) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Stat data %ld %ld %d/%d/%d/%d", sd->start_time, sd->end_time, sd->stat[0], sd->stat[1], sd->stat[2], sd->stat[3]);
-}
-#endif
-
 void store_data(SleepData* data) {
 
     // Prevent storing empty sleep data
@@ -60,19 +54,17 @@ void store_data(SleepData* data) {
                 size = data->count_values % MAX_PERSIST_BUFFER;
             }
         }
-#ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Write values with key %d", (PERSISTENT_VALUES_KEY+i));
-#endif
+        D("Write values with key %d", (PERSISTENT_VALUES_KEY+i));
+
         persist_write_data(PERSISTENT_VALUES_KEY+i, &values[i*MAX_PERSIST_BUFFER], size);
     }
     free(values);
     
     // Write statistics
     int csd = count_stat_data();
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Count stat data %d", csd);
-#endif
+    D("Count stat data %d", csd);
 
+    
     StatData *new_stat = malloc(sizeof(StatData));
     new_stat->start_time = data->start_time;
     new_stat->end_time = data->end_time;
@@ -85,22 +77,19 @@ void store_data(SleepData* data) {
         StatData *sd = malloc(sizeof(StatData));
         persist_read_data(STAT_START+i, sd, sizeof(StatData));
         stat_data[i] = sd;
-#ifdef DEBUG
-        dump_stat_data(sd);
-#endif
+
+        D("Stat data %ld %ld %d/%d/%d/%d", sd->start_time, sd->end_time, sd->stat[0], sd->stat[1], sd->stat[2], sd->stat[3]);
     }
     
     if (csd < MAX_STAT_COUNT) {
-#ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist new stat record %d at %d", (csd + 1), (STAT_START + csd));
-#endif
+        D("Persist new stat record %d at %d", (csd + 1), (STAT_START + csd));
+
         // Just add one more at the end
         persist_write_data(STAT_START + csd, new_stat, sizeof(StatData));
         persist_write_int(COUNT_STATS_KEY, csd + 1);
     } else {
-#ifdef DEBUG
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist new stat record at the end at %d", (STAT_START + csd));
-#endif
+        D("Persist new stat record at the end at %d", (STAT_START + csd));
+
         // Write from 1..MAX_STAT_COUNT
         for (int i = 0; i < MAX_STAT_COUNT - 1; i++) {
             persist_write_data(STAT_START + i, stat_data[i+1], sizeof(StatData));
@@ -116,48 +105,49 @@ void store_data(SleepData* data) {
     free(new_stat);
 }
 
-SleepData* read_last_sleep_data() {
+void read_last_sleep_data(SleepData *sd) {
     // Read the stats from DB
     int csd = count_stat_data();
     StatData *stat = malloc(sizeof(StatData));
-    SleepData *last_sd = malloc(sizeof(SleepData));
     
     persist_read_data(STAT_START+csd-1, stat, sizeof(StatData));
 
-    last_sd->start_time = stat->start_time;
-    last_sd->end_time = stat->end_time;
+    if (stat == NULL) {
+        return;
+    }
+    
+    sd->start_time = stat->start_time;
+    sd->end_time = stat->end_time;
     
     for (int i = 0; i < COUNT_PHASES; i++) {
-        last_sd->stat[i] = stat->stat[i];
+        sd->stat[i] = stat->stat[i];
     }
     free(stat);
     
     // Read values
-    last_sd->count_values = persist_read_int(PERSISTENT_COUNT_KEY);
+    sd->count_values = persist_read_int(PERSISTENT_COUNT_KEY);
     
-    uint8_t *values = malloc(sizeof(uint8_t) * last_sd->count_values);
+    uint8_t *values = malloc(sizeof(uint8_t) * sd->count_values);
     // Now write the values
     //#define PERSISTENT_VALUES_KEY 2
     // use 2, 3, 4 - every each with 240 bytes
-    int chunks = last_sd->count_values / MAX_PERSIST_BUFFER;
-    if (last_sd->count_values % MAX_PERSIST_BUFFER > 0)
+    int chunks = sd->count_values / MAX_PERSIST_BUFFER;
+    if (sd->count_values % MAX_PERSIST_BUFFER > 0)
         chunks++;
     
     for (int i = 0; i < chunks; i++) {
         int size = MAX_PERSIST_BUFFER;
         if (i == chunks - 1) { // Last chunk
-            if (last_sd->count_values % MAX_PERSIST_BUFFER > 0) {
-                size = last_sd->count_values % MAX_PERSIST_BUFFER;
+            if (sd->count_values % MAX_PERSIST_BUFFER > 0) {
+                size = sd->count_values % MAX_PERSIST_BUFFER;
             }
         }
         persist_read_data(PERSISTENT_VALUES_KEY+i, &values[i*MAX_PERSIST_BUFFER], size);
     }
-    for (int i = 0; i < last_sd->count_values; i++) {
-        last_sd->minutes_value[i] = values[i]; // Cast from uint8 to uint16
+    for (int i = 0; i < sd->count_values; i++) {
+        sd->minutes_value[i] = values[i]; // Cast from uint8 to uint16
     }
     free(values);
-    
-    return last_sd;
 }
 
 /*
@@ -174,20 +164,30 @@ int count_stat_data() {
 
 StatData** read_stat_data() {
     int csd = count_stat_data();
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Read stat data %d", csd);
-#endif
+    
+    D("Read stat data %d reserve: %d bytes", csd, sizeof(StatData*)*csd);
+
     StatData **stat_data = malloc(sizeof(StatData*)*csd);
     for (int i = 0; i < csd; i++) {
         StatData *sd = malloc(sizeof(StatData));
         persist_read_data(STAT_START+i, sd, sizeof(StatData));
-#ifdef DEBUG
-        dump_stat_data(sd);
-#endif
+
+        D("Stat data %ld %ld %d/%d/%d/%d", sd->start_time, sd->end_time, sd->stat[0], sd->stat[1], sd->stat[2], sd->stat[3]);
+        
         stat_data[i] = sd;
     }
     return stat_data;
 }
+
+StatData* read_stat_data_rec(int index) {
+    StatData *sd = malloc(sizeof(StatData));
+    persist_read_data(STAT_START+index, sd, sizeof(StatData));
+
+    D("Stat data %ld %ld %d/%d/%d/%d", sd->start_time, sd->end_time, sd->stat[0], sd->stat[1], sd->stat[2], sd->stat[3]);
+    
+    return sd;
+}
+
 
 /*
  * Migrate the DB version
@@ -237,9 +237,8 @@ void migrate_version() {
         }
         // Migrate sleep data structure
         if (version < current_db_version) {
-#ifdef DEBUG
-            APP_LOG(APP_LOG_LEVEL_DEBUG, "Migrate configuraiton data");
-#endif
+            D("Migrate configuraiton data");
+
             persist_read_config();
             set_config_up_coef(UP_COEF_NORMAL);
             set_config_down_coef(DOWN_COEF_NORMAL);

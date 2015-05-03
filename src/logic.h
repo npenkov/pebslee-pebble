@@ -27,7 +27,14 @@
 #ifndef LOGIC_H_
 #define LOGIC_H_
 
-#define DEBUG 1
+// #define DEBUG
+
+#ifdef DEBUG
+#define D(...) APP_LOG(APP_LOG_LEVEL_DEBUG, __VA_ARGS__);
+#else
+#define D(...)
+#endif
+
 
 #define MODE_WORKDAY 0
 #define MODE_WEEKEND 1
@@ -75,6 +82,7 @@ typedef struct {
 
 #define PS_APP_MESSAGE_COMMAND_START_SYNC  21
 #define PS_APP_MESSAGE_COMMAND_SET_TIME 22
+#define PS_APP_MESSAGE_COMMAND_TOGGLE_SLEEP 23
 
 #define PS_APP_MSG_HEADER_START 0
 #define PS_APP_MSG_HEADER_END 1
@@ -105,8 +113,8 @@ void notify_mode_update(int a_mode);
 void notify_app_tracking_stopped();
 void notify_app_tracking_started();
 
-GlobalConfig *get_config();
-SleepData *get_sleep_data();
+GlobalConfig* get_config();
+SleepData* get_sleep_data();
 
 void set_config_mode(int a_mode);
 void set_config_status(int a_status);
@@ -144,4 +152,5 @@ void in_dropped_handler(AppMessageResult reason, void *context);
 
 void set_outbox_size(int outbox_size);
 SleepData* read_last_data();
+void freeLogic();
 #endif /* LOGIC_H_ */

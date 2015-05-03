@@ -28,6 +28,7 @@
 #include "persistence.h"
 #include "syncprogress_window.h"
 #include "localize.h"
+#include "sleep_window.h"
 
 // ================== Communication ======================
 static AppTimer *timerSync;
@@ -88,9 +89,9 @@ static void send_timer_callback() {
 }
 
 static void send_last_stored_data() {
-    SleepData *lastSleep = read_last_sleep_data();
+    read_last_sleep_data(get_sleep_data());
     // Generate tuplets
-    sendData.countTuplets = lastSleep->count_values;
+    sendData.countTuplets = get_sleep_data()->count_values;
     
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "About to send %d records", sendData.countTuplets);
@@ -99,15 +100,13 @@ static void send_last_stored_data() {
     int tpIndex = 0;
     
     // Header
-    sendData.start_time = lastSleep->start_time;
-    sendData.end_time = lastSleep->end_time;
-    sendData.count_values = lastSleep->count_values;
+    sendData.start_time = get_sleep_data()->start_time;
+    sendData.end_time = get_sleep_data()->end_time;
+    sendData.count_values = get_sleep_data()->count_values;
     
-    for (int i = 0; i < lastSleep->count_values; i++, tpIndex++) {
-        sendData.data[tpIndex] = lastSleep->minutes_value[i];
+    for (int i = 0; i < get_sleep_data()->count_values; i++, tpIndex++) {
+        sendData.data[tpIndex] = get_sleep_data()->minutes_value[i];
     }
-    // Free the memory
-    free(lastSleep);
     
     uint32_t size = dict_calc_buffer_size(sendData.countTuplets, sizeof(uint8_t));
     
@@ -187,6 +186,8 @@ void in_received_handler(DictionaryIterator *received, void *context) {
             persist_write_config();
             
             hide_syncprogress_window();
+        } else if (command_tupple->value->uint8 == PS_APP_MESSAGE_COMMAND_TOGGLE_SLEEP) {
+            toggle_sleep();
         }
     }
 }

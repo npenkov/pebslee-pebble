@@ -78,10 +78,9 @@ GlobalConfig *get_config() {
     return &config;
 }
 
-SleepData *get_sleep_data() {
+SleepData* get_sleep_data() {
     return &sleep_data;
 }
-
 
 void set_config_mode(int a_mode) {
     config.mode = a_mode;
@@ -503,4 +502,15 @@ void stop_motion_capturing() {
 
     // Stop the background worker
     AppWorkerResult result = app_worker_kill();
+}
+
+void freeLogic() {
+//    if (timer != NULL) {
+//        free(timer);
+//    }
+//#ifdef DEBUG
+//    if (timerRep != NULL) {
+//        free(timerRep);
+//    }
+//#endif
 }
