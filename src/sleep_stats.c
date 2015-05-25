@@ -230,9 +230,7 @@ static void update_ui_stat_with_sd() {
     static char date_str[] = "Xxx 00";
     strftime(date_str, sizeof(date_str),"%d %b", ttd);
     text_layer_set_text(s_tl_date, date_str);
-    
-    D("setDate: %s", tbuf);
-    
+        
     static char from_str[] = "00:00";
     strftime(from_str, sizeof(from_str), "%H:%M", ttd);
     text_layer_set_text(s_tl_from, from_str);

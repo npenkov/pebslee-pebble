@@ -27,10 +27,13 @@
 #include "comm.h"
 #include "persistence.h"
 #include "localize.h"
+#include "sleep_window.h"
 
 static uint8_t vib_count;
 static bool alarm_in_motion = NO;
+static bool snooze_active = NO;
 static AppTimer *alarm_timer;
+static AppTimer *snooze_timer;
 
 const int ALARM_TIME_BETWEEN_ITERATIONS = 5000; // 5 sec
 const int ALARM_MAX_ITERATIONS = 10; // Vibrate max 10 times
@@ -108,9 +111,8 @@ void set_config_snooze(char snooze) {
 
 
 void persist_write_config() {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist config with up/down : %d/%d", config.up_coef, config.down_coef);
-#endif
+    D("Persist config with up/down : %d/%d", config.up_coef, config.down_coef);
+
     persist_write_data(CONFIG_PERSISTENT_KEY, &config, sizeof(config));
 }
 void persist_read_config() {
@@ -125,9 +127,7 @@ void persist_read_config() {
         config.down_coef != DOWN_COEF_FAST) {
         config.down_coef = DOWN_COEF_NORMAL;
     }
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Read config with up/down : %d/%d", config.up_coef, config.down_coef);
-#endif
+    D("Read config with up/down : %d/%d", config.up_coef, config.down_coef);
 }
 
 void start_sleep_data_capturing() {
@@ -317,10 +317,12 @@ static void motion_timer_callback(void *data) {
 
 #ifdef DEBUG
 static void reporting_timer_callback(void *data) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Motion peek: %u for vector: %d/%d/%d", motion_peek_in_min, last_x, last_y, last_z);
+    D("Motion peek: %u for vector: %d/%d/%d", motion_peek_in_min, last_x, last_y, last_z);
     timerRep = app_timer_register(REPORTING_STEP_MS, reporting_timer_callback, NULL);
 }
 #endif
+
+
 
 /*
  * Alarm timer loop
@@ -328,6 +330,11 @@ static void reporting_timer_callback(void *data) {
 static void recure_alarm() {
     if (vib_count >= ALARM_MAX_ITERATIONS) {
         alarm_in_motion = NO;
+        // Reschedule if no stop alarm and snooze is active
+        if (config.snooze > 0) { // This should not be changed in the meanwhile
+            snooze_active = YES;
+            snooze_timer = app_timer_register(config.snooze * 1000 * 60, snooze_tick, NULL);
+        }
         return;
     }
     
@@ -344,27 +351,98 @@ static void recure_alarm() {
 }
 
 static void execute_alarm() {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Execute alarm");
-#endif
-    stop_motion_capturing();
-    app_active = NO;
     vib_count = 0;
     alarm_in_motion = YES;
-    config.status = STATUS_NOTACTIVE;
+    
     recure_alarm();
 }
 
-void call_stop_alarm_if_running() {
+void snooze_tick() {
+    execute_alarm();
+}
+
+bool is_alarm_running() {
+    return alarm_in_motion == YES;
+}
+
+bool is_tracking_active() {
+    return config.status == STATUS_ACTIVE;
+}
+
+bool is_snooze_active() {
+    return snooze_active;
+}
+
+void stop_alarm_timer() {
     if (alarm_in_motion) {
-        stop_sleep_data_capturing();
-        app_timer_cancel(alarm_timer);
+        if (alarm_timer != NULL)
+            app_timer_cancel(alarm_timer);
         alarm_in_motion = NO;
-        refresh_display();
+    }
+}
+
+void stop_snooze_timer() {
+    if (snooze_active) {
+        if (snooze_timer != NULL)
+            app_timer_cancel(snooze_timer);
+        snooze_active = NO;
+    }
+}
+
+
+void ui_click(bool longClick) {
+    if (longClick) {
+        if (alarm_in_motion) {
+            stop_alarm_timer();
+            stop_snooze_timer();
+
+            stop_motion_capturing();
+            stop_sleep_data_capturing();
+            app_active = NO;
+            
+            config.status = STATUS_NOTACTIVE;
+            refresh_display();
+        }
+    } else {
+        if (alarm_in_motion) {
+            // Check znooze
+            if (snooze_active) { // Stop everything - as we have already snoozed
+                stop_alarm_timer();
+                
+                // Start snooze timer
+                snooze_active = YES;
+                if (config.snooze > 0) { // This should not be changed in the meanwhile
+                    snooze_timer = app_timer_register(config.snooze * 1000 * 60, snooze_tick, NULL);
+                }
+            } else { // activate snooze if set
+                if (config.snooze > 0) {
+                    stop_alarm_timer();
+                    
+                    // Start snooze timer
+                    snooze_active = YES;
+                    snooze_timer = app_timer_register(config.snooze * 1000 * 60, snooze_tick, NULL);
+                } else {
+                    stop_alarm_timer();
+                    stop_snooze_timer();
+                    
+                    stop_motion_capturing();
+                    stop_sleep_data_capturing();
+                    app_active = NO;
+                    
+                    config.status = STATUS_NOTACTIVE;
+                    refresh_display();       
+                }
+            } 
+        }
     }
 }
 
 void check_alarm() {
+    if (alarm_in_motion)
+        return;
+    if (snooze_active)
+        return;
+
     if (config.mode == MODE_WORKDAY) {
         time_t t1;
         time(&t1);
@@ -466,11 +544,16 @@ void notify_status_update(int a_status) {
         start_motion_capturing();
         start_sleep_data_capturing();
         app_active = YES;
+        snooze_active = NO;
     } else if (a_status == STATUS_NOTACTIVE) {
         vibes_double_pulse();
         stop_motion_capturing();
         stop_sleep_data_capturing();
         app_active = NO;
+        if (snooze_active) {
+            app_timer_cancel(snooze_timer);
+        }
+        snooze_active = NO;
     }
 }
 

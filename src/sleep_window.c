@@ -239,8 +239,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 }
 
 static void up_long_click_handler(ClickRecognizerRef recognizer, void *context) {
-    // Here we can show a window with allowed fuctions or just a status
-    call_stop_alarm_if_running();
+    ui_click(YES);
 }
 
 static void up_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
@@ -253,14 +252,9 @@ static void up_long_click_release_handler(ClickRecognizerRef recognizer, void *c
     update_mode();
 }
 
-static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-    call_stop_alarm_if_running();
-    show_alarm_config();
-}
-
 static void down_long_click_handler(ClickRecognizerRef recognizer, void *context) {
     // Here we can show a window with allowed fuctions or just a status
-    call_stop_alarm_if_running();
+    ui_click(YES);
 }
 
 static void down_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
@@ -278,30 +272,48 @@ static void select_long_click_handler(ClickRecognizerRef recognizer, void *conte
 }
 
 static void select_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
-    show_action_menu();
-}
-
-
-// BACK
-static void back_long_click_handler(ClickRecognizerRef recognizer, void *context) {
-    call_stop_alarm_if_running();
-    if (get_config()->status != STATUS_ACTIVE) {
-        hide_sleep_window();
+    if (!is_alarm_running()) {
+        show_action_menu();
+    } else {
+        ui_click(YES);
     }
 }
 
+// BACK
+static void back_long_click_handler(ClickRecognizerRef recognizer, void *context) {
+}
+
 static void back_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
-    call_stop_alarm_if_running();
-    if (get_config()->status != STATUS_ACTIVE) {
+    if (!is_tracking_active()) {
         hide_sleep_window();
+    } else {
+        ui_click(YES);   
     }
 }
 
 static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
-    call_stop_alarm_if_running();
-    if (get_config()->status != STATUS_ACTIVE) {
+    if (!is_tracking_active()) {
         hide_sleep_window();
+    } else {
+        ui_click(NO);   
     }
+}
+
+static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+    ui_click(NO);
+}
+
+static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+    if (!is_alarm_running()) {
+        show_alarm_config();
+    } else {
+        ui_click(NO);
+    }
+}
+
+
+static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
+    ui_click(NO);
 }
 
 
@@ -312,13 +324,15 @@ static void config_provider(void *context) {
     
     // UP button
     window_long_click_subscribe(BUTTON_ID_UP, 700, up_long_click_handler, up_long_click_release_handler);
-    
+    window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
+
     // SELECT/middle button
-    window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
     window_long_click_subscribe(BUTTON_ID_SELECT, 700, select_long_click_handler, select_long_click_release_handler);
+    window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
     
     // DOWN button
     window_long_click_subscribe(BUTTON_ID_DOWN, 700, down_long_click_handler, down_long_click_release_handler);
+    window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
 }
 
 void show_sleep_window(void) {

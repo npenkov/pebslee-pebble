@@ -62,9 +62,8 @@ static void send_timer_callback() {
         
     }
     int tpIndex = (sendData.currentSendChunk * sendData.sendChunkSize);
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "timer callback send for index %d", tpIndex);
-#endif
+    D("timer callback send for index %d", tpIndex);
+
     
     if (tpIndex >= sendData.countTuplets) {
         // Finished with sync
@@ -93,9 +92,7 @@ static void send_last_stored_data() {
     // Generate tuplets
     sendData.countTuplets = get_sleep_data()->count_values;
     
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "About to send %d records", sendData.countTuplets);
-#endif
+    D("About to send %d records", sendData.countTuplets);
     
     int tpIndex = 0;
     
@@ -118,9 +115,8 @@ static void send_last_stored_data() {
     if (sendData.sendChunkSize > MAX_SEND_VALS || sendData.sendChunkSize <= 0) {
         sendData.sendChunkSize = MAX_SEND_VALS;
     }
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Determined chunk size %d for message outbox size %ld ", sendData.sendChunkSize, message_outbox_size);
-#endif
+    D("Determined chunk size %d for message outbox size %ld ", sendData.sendChunkSize, message_outbox_size);
+    
     sendData.currentSendChunk = -1;
     timerSend = app_timer_register(SEND_STEP_MS, send_timer_callback, NULL);
 }
@@ -137,27 +133,23 @@ static void sync_timer_callback() {
 }
 
 void out_sent_handler(DictionaryIterator *sent, void *context) {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "out_sent_handler:");
-#endif
+    D("out_sent_handler:");
     sendData.currentSendChunk += 1;
     timerSend = app_timer_register(SEND_STEP_MS, send_timer_callback, NULL);
 }
 
 
 void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "out_failed_handler:");
-#endif
+    D("out_failed_handler:");
+
     // Repeat lst chunk - do not increment the currentSendChunk
     timerSend = app_timer_register(SEND_STEP_MS, send_timer_callback, NULL);
 }
 
 
 void in_received_handler(DictionaryIterator *received, void *context) {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "in_received_handler:");
-#endif
+    D("in_received_handler:");
+
     if (sync_in_progress) return;
     if (sync_start) return;
     
@@ -178,9 +170,8 @@ void in_received_handler(DictionaryIterator *received, void *context) {
             Tuple *end_time_hour_tupple = dict_find(received, PS_APP_TO_WATCH_END_TIME_HOUR);
             Tuple *end_time_minute_tupple = dict_find(received, PS_APP_TO_WATCH_END_TIME_MINUTE);
 
-#ifdef DEBUG
-            APP_LOG(APP_LOG_LEVEL_DEBUG, "save start: %d:%d end: %d%d", start_time_hour_tupple->value->uint8, start_time_minute_tupple->value->uint8, end_time_hour_tupple->value->uint8, end_time_minute_tupple->value->uint8);
-#endif
+            D("save start: %d:%d end: %d%d", start_time_hour_tupple->value->uint8, start_time_minute_tupple->value->uint8, end_time_hour_tupple->value->uint8, end_time_minute_tupple->value->uint8);
+            
             set_config_start_time(start_time_hour_tupple->value->uint8, start_time_minute_tupple->value->uint8);
             set_config_end_time(end_time_hour_tupple->value->uint8, end_time_minute_tupple->value->uint8);
             persist_write_config();
@@ -194,9 +185,7 @@ void in_received_handler(DictionaryIterator *received, void *context) {
 
 
 void in_dropped_handler(AppMessageResult reason, void *context) {
-#ifdef DEBUG
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "in_dropped_handler:");
-#endif
+    D("in_dropped_handler:");
 }
 
 void set_outbox_size(int outbox_size) {

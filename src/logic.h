@@ -27,10 +27,10 @@
 #ifndef LOGIC_H_
 #define LOGIC_H_
 
-// #define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
-#define D(...) APP_LOG(APP_LOG_LEVEL_DEBUG, __VA_ARGS__);
+#define D(...) APP_LOG(APP_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #else
 #define D(...)
 #endif
@@ -143,7 +143,11 @@ void accel_data_handler(AccelData *data, uint32_t num_samples);
 void start_motion_capturing();
 void stop_motion_capturing();
 
-void call_stop_alarm_if_running();
+void ui_click(bool longClick);
+
+bool is_alarm_running();
+bool is_tracking_active();
+bool is_snooze_active();
 
 void out_sent_handler(DictionaryIterator *sent, void *context);
 void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context);
@@ -153,4 +157,6 @@ void in_dropped_handler(AppMessageResult reason, void *context);
 void set_outbox_size(int outbox_size);
 SleepData* read_last_data();
 void freeLogic();
+// This should not be here
+void snooze_tick();
 #endif /* LOGIC_H_ */

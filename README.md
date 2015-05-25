@@ -21,6 +21,10 @@ for more details visit http://www.pebslee.com/
 
 # Version information
 
+## v.1.7
+
+* Snooze function - when active - one click on buttons when alarm - snoozes. Long click - stops alarm
+
 ## v.1.6
 
 * Translations in French - ready for German and Spanish
