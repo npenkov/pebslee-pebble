@@ -21,6 +21,13 @@ for more details visit http://www.pebslee.com/
 
 # Version information
 
+## v.1.6
+
+* Translations in French - ready for German and Spanish
+* Option for snooze
+* Remote command activated for toggling tracking from the phone
+* Stability - memory leaks removed.
+
 ## v.1.5
 
 * Back button on main windows works only when sleep is not active (stopped) - can be used to light up display while active
