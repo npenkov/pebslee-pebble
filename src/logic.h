@@ -27,7 +27,7 @@
 #ifndef LOGIC_H_
 #define LOGIC_H_
 
-//#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
 #define D(...) APP_LOG(APP_LOG_LEVEL_DEBUG, __VA_ARGS__)

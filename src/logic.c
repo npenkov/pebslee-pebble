@@ -27,7 +27,6 @@
 #include "comm.h"
 #include "persistence.h"
 #include "localize.h"
-#include "sleep_window.h"
 
 static uint8_t vib_count;
 static bool alarm_in_motion = NO;
