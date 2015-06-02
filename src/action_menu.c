@@ -194,6 +194,7 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
             } else {
                 set_config_active_profile(ACTIVE_PROFILE_NORMAL);
             }
+            menu_layer_reload_data(s_menulayer);
             break;
 
         case 7:
