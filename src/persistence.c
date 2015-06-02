@@ -32,7 +32,7 @@ void store_data(SleepData* data) {
     // Prevent storing empty sleep data
     if (data->count_values <= 0)
         return;
-        
+
     // Store first the values
     persist_write_int(PERSISTENT_COUNT_KEY, data->count_values);
     // Transform values from 0->5000 to 0-255 scale
@@ -46,7 +46,7 @@ void store_data(SleepData* data) {
     int chunks = data->count_values / MAX_PERSIST_BUFFER;
     if (data->count_values % MAX_PERSIST_BUFFER > 0)
         chunks++;
-    
+
     for (int i = 0; i < chunks; i++) {
         int size = MAX_PERSIST_BUFFER;
         if (i == chunks - 1) { // Last chunk
@@ -59,19 +59,19 @@ void store_data(SleepData* data) {
         persist_write_data(PERSISTENT_VALUES_KEY+i, &values[i*MAX_PERSIST_BUFFER], size);
     }
     free(values);
-    
+
     // Write statistics
     int csd = count_stat_data();
     D("Count stat data %d", csd);
 
-    
+
     StatData *new_stat = malloc(sizeof(StatData));
     new_stat->start_time = data->start_time;
     new_stat->end_time = data->end_time;
     for (int i = 0; i < COUNT_PHASES; i++) {
         new_stat->stat[i] = data->stat[i];
     }
-    
+
     StatData **stat_data = malloc(sizeof(StatData*)*csd);
     for (int i = 0; i < csd; i++) {
         StatData *sd = malloc(sizeof(StatData));
@@ -80,7 +80,7 @@ void store_data(SleepData* data) {
 
         D("Stat data %ld %ld %d/%d/%d/%d", sd->start_time, sd->end_time, sd->stat[0], sd->stat[1], sd->stat[2], sd->stat[3]);
     }
-    
+
     if (csd < MAX_STAT_COUNT) {
         D("Persist new stat record %d at %d", (csd + 1), (STAT_START + csd));
 
@@ -105,28 +105,32 @@ void store_data(SleepData* data) {
     free(new_stat);
 }
 
+int count_motion_values() {
+    return persist_read_int(PERSISTENT_COUNT_KEY);
+}
+
 void read_last_sleep_data(SleepData *sd) {
     // Read the stats from DB
     int csd = count_stat_data();
     StatData *stat = malloc(sizeof(StatData));
-    
+
     persist_read_data(STAT_START+csd-1, stat, sizeof(StatData));
 
     if (stat == NULL) {
         return;
     }
-    
+
     sd->start_time = stat->start_time;
     sd->end_time = stat->end_time;
-    
+
     for (int i = 0; i < COUNT_PHASES; i++) {
         sd->stat[i] = stat->stat[i];
     }
     free(stat);
-    
+
     // Read values
     sd->count_values = persist_read_int(PERSISTENT_COUNT_KEY);
-    
+
     uint8_t *values = malloc(sizeof(uint8_t) * sd->count_values);
     // Now write the values
     //#define PERSISTENT_VALUES_KEY 2
@@ -134,7 +138,7 @@ void read_last_sleep_data(SleepData *sd) {
     int chunks = sd->count_values / MAX_PERSIST_BUFFER;
     if (sd->count_values % MAX_PERSIST_BUFFER > 0)
         chunks++;
-    
+
     for (int i = 0; i < chunks; i++) {
         int size = MAX_PERSIST_BUFFER;
         if (i == chunks - 1) { // Last chunk
@@ -148,6 +152,45 @@ void read_last_sleep_data(SleepData *sd) {
         sd->minutes_value[i] = values[i]; // Cast from uint8 to uint16
     }
     free(values);
+}
+
+uint8_t *read_motion_data() {
+    int cntVals = persist_read_int(PERSISTENT_COUNT_KEY);
+
+    uint8_t *motionVals = malloc(cntVals);
+
+    if (motionVals == NULL) {
+        D("Error allocating memory %d", cntVals);
+        return motionVals;
+    }
+
+    if (cntVals == 0) {
+        D("Count is 0");
+        return motionVals;
+    }
+
+    int chunks = cntVals / MAX_PERSIST_BUFFER;
+    if (cntVals % MAX_PERSIST_BUFFER > 0)
+        chunks++;
+
+    int rest = cntVals % MAX_PERSIST_BUFFER;
+    for (int i = 0; i < chunks; i++) {
+        int size = MAX_PERSIST_BUFFER;
+        if (i == chunks - 1) { // Last chunk
+            if (rest > 0) {
+                size = rest;
+            }
+        }
+        persist_read_data(PERSISTENT_VALUES_KEY+i, &motionVals[i*MAX_PERSIST_BUFFER], size);
+    }
+    return motionVals;
+}
+
+StatData* read_last_stat_data() {
+    int csd = count_stat_data();
+    StatData *stat = malloc(sizeof(StatData));
+    persist_read_data(STAT_START+csd-1, stat, sizeof(StatData));
+    return stat;
 }
 
 /*
@@ -164,7 +207,7 @@ int count_stat_data() {
 
 StatData** read_stat_data() {
     int csd = count_stat_data();
-    
+
     D("Read stat data %d reserve: %d bytes", csd, sizeof(StatData*)*csd);
 
     StatData **stat_data = malloc(sizeof(StatData*)*csd);
@@ -173,7 +216,7 @@ StatData** read_stat_data() {
         persist_read_data(STAT_START+i, sd, sizeof(StatData));
 
         D("Stat data %ld %ld %d/%d/%d/%d", sd->start_time, sd->end_time, sd->stat[0], sd->stat[1], sd->stat[2], sd->stat[3]);
-        
+
         stat_data[i] = sd;
     }
     return stat_data;
@@ -184,7 +227,7 @@ StatData* read_stat_data_rec(int index) {
     persist_read_data(STAT_START+index, sd, sizeof(StatData));
 
     D("Stat data %ld %ld %d/%d/%d/%d", sd->start_time, sd->end_time, sd->stat[0], sd->stat[1], sd->stat[2], sd->stat[3]);
-    
+
     return sd;
 }
 
@@ -245,7 +288,7 @@ void migrate_version() {
             persist_write_int(VERSION_KEY, current_db_version);
         }
     }
-    
+
     // Reset data
 //    for (int i = 0; i <= COUNT_STATS_KEY; i++) {
 //        if (persist_exists(i))

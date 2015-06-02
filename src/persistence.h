@@ -66,6 +66,9 @@ void read_last_sleep_data(SleepData *sd);
 int count_stat_data();
 StatData** read_stat_data();
 StatData* read_stat_data_rec(int index);
+StatData* read_last_stat_data();
+int count_motion_values();
+uint8_t *read_motion_data();
 
 void migrate_version();
 

@@ -27,16 +27,29 @@
 #define MAX_COUNT 720
 #define COUNT_PHASES 4
 
+#ifndef MIN
+  #define MIN(a, b) ((a) < (b)) ? (a) : (b)
+#endif
+#ifndef MAX
+  #define MAX(a, b) ((a) > (b)) ? (a) : (b)
+#endif
+#ifndef IN_RANGE
+  #define IN_RANGE(x, a, b) ( (x) >= (a) && (x) <= (b) )
+#endif
+
+
+
+
 typedef struct {
     uint32_t start_time;
     uint32_t end_time;
     bool finished;
-    
+
     uint16_t stat[COUNT_PHASES];
-    
+
     uint16_t minutes_value[MAX_COUNT];
     uint16_t count_values;
-    
+
 } SleepData;
 
 #endif

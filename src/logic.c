@@ -133,10 +133,10 @@ void start_sleep_data_capturing() {
     time_t temp = time(NULL);
     sleep_data.start_time = temp;
     sleep_data.finished = false;
-    
+
     for (int i = 0; i < COUNT_PHASES; i++)
         sleep_data.stat[i] = 0;
-    
+
     //uint8_t *minutes_value;
     sleep_data.count_values = 0;
     sleep_data.minutes_value[sleep_data.count_values] = START_PEEK_MOTION;
@@ -183,9 +183,9 @@ void stop_sleep_data_capturing() {
         time(&temp);
         sleep_data.end_time = temp;
         sleep_data.finished = true;
-        
+
         store_data(&sleep_data);
-        
+
 #ifdef DEBUG
         APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Stop capturing ==");
         time_t t2 = sleep_data.end_time;
@@ -210,7 +210,7 @@ void increase_start_min() {
     } else {
         config.start_wake_min = config.start_wake_min + 1;
     }
-    
+
 }
 void increase_end_hour() {
     if (config.end_wake_hour == 23) {
@@ -225,7 +225,7 @@ void increase_end_min() {
     } else {
         config.end_wake_min = config.end_wake_min + 1;
     }
-    
+
 }
 
 void decrease_start_hour() {
@@ -241,7 +241,7 @@ void decrease_start_min() {
     } else {
         config.start_wake_min = config.start_wake_min - 1;
     }
-    
+
 }
 void decrease_end_hour() {
     if (config.end_wake_hour == 0) {
@@ -256,7 +256,7 @@ void decrease_end_min() {
     } else {
         config.end_wake_min = config.end_wake_min - 1;
     }
-    
+
 }
 
 static void memo_motion(uint16_t peek) {
@@ -271,7 +271,7 @@ static void memo_motion(uint16_t peek) {
 static void motion_timer_callback(void *data) {
     AccelData accel = (AccelData ) { .x = 0, .y = 0, .z = 0 };
     accel_service_peek(&accel);
-    
+
     // Not interested in values from vibration
     if (accel.did_vibrate) {
         // Log 0 to keep the frequency
@@ -281,7 +281,7 @@ static void motion_timer_callback(void *data) {
     int16_t delta_x;
     int16_t delta_y;
     int16_t delta_z;
-    
+
     if (last_x == 0 && last_y == 0 && last_z == 0) {
         delta_x = 0;
         delta_y = 0;
@@ -291,26 +291,26 @@ static void motion_timer_callback(void *data) {
         delta_x = abs(accel.x - last_x);
         delta_y = abs(accel.y - last_y);
         delta_z = abs(accel.z - last_z);
-        
+
         // Don't take into account value that are less than delta
         if (delta_x < DELTA)
             delta_x = 0;
-        
+
         if (delta_y < DELTA)
             delta_y = 0;
-        
+
         if (delta_z < DELTA)
             delta_z = 0;
-        
+
         uint16_t delta_value = (delta_x + delta_y + delta_z)/3;
-        
+
         memo_motion(delta_value);
     }
-    
+
     last_x = accel.x;
     last_y = accel.y;
     last_z = accel.z;
-    
+
     timer = app_timer_register(ACCEL_STEP_MS, motion_timer_callback, NULL);
 }
 
@@ -336,14 +336,14 @@ static void recure_alarm() {
         }
         return;
     }
-    
+
     // Vibrate
     vibes_long_pulse();
-    
+
     alarm_timer = app_timer_register(ALARM_TIME_BETWEEN_ITERATIONS, recure_alarm, NULL);
-    
+
     vib_count++;
-    
+
     if (vib_count % 3 == 0) {
         light_enable_interaction();
     }
@@ -352,7 +352,7 @@ static void recure_alarm() {
 static void execute_alarm() {
     vib_count = 0;
     alarm_in_motion = YES;
-    
+
     recure_alarm();
 }
 
@@ -398,7 +398,7 @@ void ui_click(bool longClick) {
             stop_motion_capturing();
             stop_sleep_data_capturing();
             app_active = NO;
-            
+
             config.status = STATUS_NOTACTIVE;
             refresh_display();
         }
@@ -407,7 +407,7 @@ void ui_click(bool longClick) {
             // Check znooze
             if (snooze_active) { // Stop everything - as we have already snoozed
                 stop_alarm_timer();
-                
+
                 // Start snooze timer
                 snooze_active = YES;
                 if (config.snooze > 0) { // This should not be changed in the meanwhile
@@ -416,22 +416,22 @@ void ui_click(bool longClick) {
             } else { // activate snooze if set
                 if (config.snooze > 0) {
                     stop_alarm_timer();
-                    
+
                     // Start snooze timer
                     snooze_active = YES;
                     snooze_timer = app_timer_register(config.snooze * 1000 * 60, snooze_tick, NULL);
                 } else {
                     stop_alarm_timer();
                     stop_snooze_timer();
-                    
+
                     stop_motion_capturing();
                     stop_sleep_data_capturing();
                     app_active = NO;
-                    
+
                     config.status = STATUS_NOTACTIVE;
-                    refresh_display();       
+                    refresh_display();
                 }
-            } 
+            }
         }
     }
 }
@@ -448,12 +448,12 @@ void check_alarm() {
         struct tm *tt = localtime(&t1);
         int h = tt->tm_hour;
         int m = tt->tm_min;
-        
+
         // We have active alarm
         // so check interval
         if (h >= config.start_wake_hour &&
             h <= config.end_wake_hour) {
-            
+
             bool inTime = YES;
             if (h == config.start_wake_hour) {
                 if (m >= config.start_wake_min)
@@ -461,14 +461,14 @@ void check_alarm() {
                 else
                     return;
             }
-            
+
             if (h == config.end_wake_hour) {
                 if (m <= config.end_wake_min)
                     inTime = YES;
                 else
                     return;
             }
-            
+
             if (inTime && current_sleep_phase == LIGHT) {
                 execute_alarm();
                 return;
@@ -483,7 +483,7 @@ void check_alarm() {
             } else {
                 delta_time_m = config.end_wake_min - LAST_MIN_WAKE;
             }
-            
+
             if (delta_time_h < h || (delta_time_h == h && delta_time_m < m)) {
                 execute_alarm();
                 return;
@@ -496,12 +496,12 @@ static void persist_motion() {
     if (sleep_data.count_values >= MAX_COUNT-1)
         return;
     uint16_t prev_value = sleep_data.minutes_value[sleep_data.count_values];
-    
+
     int med_val = abs(motion_peek_in_min - prev_value)/2;
     uint16_t median_peek = (motion_peek_in_min - prev_value) > 0
     ? prev_value + (med_val*((float)config.up_coef/10))
     : prev_value - (med_val*((float)config.down_coef/10));
-    
+
     for (int i = 1; i < COUNT_TRESHOLDS; i++) {
         if (median_peek > thresholds[i-1] && median_peek <= thresholds[i]) {
             current_sleep_phase = i;
@@ -509,14 +509,14 @@ static void persist_motion() {
         }
     }
     sleep_data.stat[current_sleep_phase-1] += 1;
-    
+
     sleep_data.count_values += 1;
-    
+
     // Store modified motion data
     sleep_data.minutes_value[sleep_data.count_values] = median_peek;
     // Alternative - store original value
     //sleep_data.minutes_value[sleep_data.count_values] = motion_peek_in_min;
-    
+
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Persist motion %u/%d/%u - sleep phase: %s", motion_peek_in_min, med_val, median_peek, decode_phase(current_sleep_phase));
     APP_LOG(APP_LOG_LEVEL_DEBUG, "* == Sleep data ==");
@@ -568,7 +568,7 @@ void start_motion_capturing() {
     motion_peek_in_min = 0;
     AppWorkerResult result = app_worker_launch();
     timer = app_timer_register(ACCEL_STEP_MS, motion_timer_callback, NULL);
-    
+
 #ifdef DEBUG
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Start motion capturing");
     timerRep = app_timer_register(REPORTING_STEP_MS, reporting_timer_callback, NULL);

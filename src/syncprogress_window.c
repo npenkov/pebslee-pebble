@@ -25,6 +25,7 @@
 
 #include "syncprogress_window.h"
 #include "localize.h"
+#include "logic.h"
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
@@ -32,13 +33,14 @@ static GBitmap *s_res_img_sync;
 static BitmapLayer *s_bmp_sync;
 
 static void initialise_ui(void) {
+    D("syncprogress_window: initliaze_ui");
     s_window = window_create();
     window_set_background_color(s_window, GColorBlack);
-    
-#ifndef PBL_SDK_3    
+
+#ifndef PBL_SDK_3
     window_set_fullscreen(s_window, false);
 #endif
-    
+
     s_res_img_sync = gbitmap_create_with_resource(RESOURCE_ID_IMG_SYNC_PROGRESS);
     // s_bmp_sync
     s_bmp_sync = bitmap_layer_create(GRect(0, 0, 144, 168));
@@ -47,6 +49,7 @@ static void initialise_ui(void) {
 }
 
 static void destroy_ui(void) {
+    D("syncprogress_window: destroy_ui");
     window_destroy(s_window);
     bitmap_layer_destroy(s_bmp_sync);
     gbitmap_destroy(s_res_img_sync);
@@ -68,4 +71,3 @@ void show_syncprogress_window(void) {
 void hide_syncprogress_window(void) {
     window_stack_remove(s_window, true);
 }
-

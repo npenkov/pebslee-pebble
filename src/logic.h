@@ -27,7 +27,7 @@
 #ifndef LOGIC_H_
 #define LOGIC_H_
 
-// #define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define D(...) APP_LOG(APP_LOG_LEVEL_DEBUG, __VA_ARGS__)
@@ -40,9 +40,9 @@
 #define MODE_WEEKEND 1
 
 #define STATUS_NOTACTIVE 0
-#define STATUS_ACTIVE 1  
+#define STATUS_ACTIVE 1
 
-#define NO 0  
+#define NO 0
 #define YES 1
 
 #define MAX_MEASURE_VALUE 5000
@@ -60,16 +60,16 @@
 typedef struct {
     int mode;
     int status;
-    
+
     uint8_t start_wake_hour;
     uint8_t start_wake_min;
-    
+
     uint8_t end_wake_hour;
     uint8_t end_wake_min;
-    
+
     int up_coef;
     int down_coef;
-    
+
     char snooze;
 } GlobalConfig;
 
@@ -102,7 +102,7 @@ typedef struct {
     uint32_t start_time;
     uint32_t end_time;
     uint16_t count_values;
-    uint8_t data[MAX_COUNT]; // Header + data for 24h * 60 min
+    uint8_t *motionData;
 } SendData;
 
 
