@@ -39,6 +39,10 @@
 #define MODE_WORKDAY 0
 #define MODE_WEEKEND 1
 
+#define ACTIVE_PROFILE_NORMAL 0
+#define ACTIVE_PROFILE_ALWAYS_ALARM 1
+#define ACTIVE_PROFILE_NO_ALARM 2
+
 #define STATUS_NOTACTIVE 0
 #define STATUS_ACTIVE 1
 
@@ -71,6 +75,8 @@ typedef struct {
     int down_coef;
 
     char snooze;
+
+    int active_profile;
 } GlobalConfig;
 
 #define PS_APP_TO_WATCH_COMMAND  1
@@ -123,6 +129,7 @@ void set_config_end_time(uint8_t a_hour, uint8_t a_min);
 void set_config_up_coef(int coef);
 void set_config_down_coef(int coef);
 void set_config_snooze(char snooze);
+void set_config_active_profile(int profile);
 
 void persist_write_config();
 void persist_read_config();

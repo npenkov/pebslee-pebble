@@ -54,11 +54,11 @@ static void initialise_ui(void) {
     s_window = window_create();
     window_set_background_color(s_window, GColorBlack);
 
-#ifndef PBL_SDK_3    
+#ifndef PBL_SDK_3
     window_set_fullscreen(s_window, false);
 #endif
 
-    
+
     s_res_bitham_42_bold = fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD);
     s_res_roboto_condensed_21 = fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21);
     s_res_img_empty_22x25 = gbitmap_create_with_resource(RESOURCE_ID_IMG_EMPTY_22X25);
@@ -71,7 +71,7 @@ static void initialise_ui(void) {
     text_layer_set_text_alignment(s_tl_time, GTextAlignmentCenter);
     text_layer_set_font(s_tl_time, s_res_bitham_42_bold);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_time);
-    
+
     // s_tl_status
     s_tl_status = text_layer_create(GRect(0, 126, 144, 26));
     text_layer_set_background_color(s_tl_status, GColorClear);
@@ -87,7 +87,7 @@ static void initialise_ui(void) {
     text_layer_set_text_alignment(s_tl_date, GTextAlignmentCenter);
     text_layer_set_font(s_tl_date, s_res_roboto_condensed_21);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_date);
-    
+
     // s_tl_mode
     s_tl_mode = text_layer_create(GRect(1, 21, 144, 28));
     text_layer_set_background_color(s_tl_mode, GColorClear);
@@ -96,7 +96,7 @@ static void initialise_ui(void) {
     text_layer_set_text_alignment(s_tl_mode, GTextAlignmentCenter);
     text_layer_set_font(s_tl_mode, s_res_roboto_condensed_21);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_mode);
-    
+
     // s_textlayer_1
     s_textlayer_1 = text_layer_create(GRect(20, 0, 123, 26));
     text_layer_set_background_color(s_textlayer_1, GColorClear);
@@ -105,27 +105,27 @@ static void initialise_ui(void) {
     text_layer_set_text_alignment(s_textlayer_1, GTextAlignmentCenter);
     text_layer_set_font(s_textlayer_1, s_res_roboto_condensed_21);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_textlayer_1);
-    
+
     // s_bm_clock
     s_bm_clock = bitmap_layer_create(GRect(0, 0, 22, 26));
     bitmap_layer_set_bitmap(s_bm_clock, s_res_img_empty_22x25);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_clock);
-    
+
     // s_bm_up_right
     s_bm_up_right = bitmap_layer_create(GRect(135, 30, 8, 14));
     bitmap_layer_set_bitmap(s_bm_up_right, s_res_img_arrow_right_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_up_right);
-    
+
     // s_bm_down_right
     s_bm_down_right = bitmap_layer_create(GRect(135, 132, 8, 14));
     bitmap_layer_set_bitmap(s_bm_down_right, s_res_img_arrow_right_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_down_right);
-    
+
     // s_bm_back_left
     s_bm_back_left = bitmap_layer_create(GRect(2, 30, 8, 14));
     bitmap_layer_set_bitmap(s_bm_back_left, s_res_img_arrow_left_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_back_left);
-    
+
     // s_bm_arrow_right_select
     s_bm_arrow_right_select = bitmap_layer_create(GRect(135, 69, 8, 12));
     bitmap_layer_set_bitmap(s_bm_arrow_right_select, s_res_img_arrow_right_black_8x14);
@@ -180,11 +180,11 @@ static void update_time() {
     // Get a tm structure
     time_t temp = time(NULL);
     struct tm *tick_time = localtime(&temp);
-    
+
     // Create a long-lived buffer
     static char buffer[] = "00:00";
     static char bufferDate[] = "Mon 00";
-    
+
     // Write the current hours and minutes into the buffer
     if(clock_is_24h_style() == true) {
         //Use 2h hour format
@@ -193,8 +193,8 @@ static void update_time() {
         //Use 12 hour format
         strftime(buffer, sizeof("00:00"), "%I:%M", tick_time);
     }
-    
-    
+
+
     // Display this time on the TextLayer
     text_layer_set_text(s_tl_time, buffer);
     // Update date only when it becomes 00:00
@@ -210,13 +210,22 @@ static void calculate_mode() {
     // Get a tm structure
     time_t temp = time(NULL);
     struct tm *tick_time = localtime(&temp);
-    
-    if ((tick_time->tm_wday == 5 && tick_time->tm_hour >= 13) ||   // Friday evening
-        (tick_time->tm_wday == 6 && tick_time->tm_hour >= 13) ||   // Saturday
-        (tick_time->tm_wday == 0 && tick_time->tm_hour <= 12))     // Sunday morning
+    int prof = get_config()->active_profile;
+    if (prof == ACTIVE_PROFILE_NORMAL) {
+
+        if ((tick_time->tm_wday == 5 && tick_time->tm_hour >= 13) ||   // Friday evening
+            (tick_time->tm_wday == 6 && tick_time->tm_hour >= 13) ||   // Saturday
+            (tick_time->tm_wday == 0 && tick_time->tm_hour <= 12))     // Sunday morning
+            set_config_mode(MODE_WEEKEND);
+        else
+            set_config_mode(MODE_WORKDAY);
+    } else if (prof == ACTIVE_PROFILE_NO_ALARM) {
         set_config_mode(MODE_WEEKEND);
-    else
+    } else if (prof == ACTIVE_PROFILE_ALWAYS_ALARM) {
         set_config_mode(MODE_WORKDAY);
+    } else {
+        D("Undetermined active profile %d", prof);
+    }
 }
 
 
@@ -287,7 +296,7 @@ static void back_long_click_release_handler(ClickRecognizerRef recognizer, void 
     if (!is_tracking_active()) {
         hide_sleep_window();
     } else {
-        ui_click(YES);   
+        ui_click(YES);
     }
 }
 
@@ -295,7 +304,7 @@ static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
     if (!is_tracking_active()) {
         hide_sleep_window();
     } else {
-        ui_click(NO);   
+        ui_click(NO);
     }
 }
 
@@ -321,7 +330,7 @@ static void config_provider(void *context) {
     // BACK button
     window_long_click_subscribe(BUTTON_ID_BACK, 700, back_long_click_handler, back_long_click_release_handler);
     window_single_click_subscribe(BUTTON_ID_BACK, back_click_handler);
-    
+
     // UP button
     window_long_click_subscribe(BUTTON_ID_UP, 700, up_long_click_handler, up_long_click_release_handler);
     window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
@@ -329,7 +338,7 @@ static void config_provider(void *context) {
     // SELECT/middle button
     window_long_click_subscribe(BUTTON_ID_SELECT, 700, select_long_click_handler, select_long_click_release_handler);
     window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
-    
+
     // DOWN button
     window_long_click_subscribe(BUTTON_ID_DOWN, 700, down_long_click_handler, down_long_click_release_handler);
     window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
@@ -339,9 +348,9 @@ void show_sleep_window(void) {
     s_res_img_clock_white_22x25 = gbitmap_create_with_resource(RESOURCE_ID_IMG_CLOCK_WHITE_22X25);
     persist_read_config();
     get_config()->status = STATUS_NOTACTIVE;
-    
+
     initialise_ui();
-    
+
     window_set_window_handlers(s_window, (WindowHandlers) {
         .unload = handle_window_unload,
         .appear = handle_window_appear

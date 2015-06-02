@@ -28,7 +28,7 @@ static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data
 // Each section has a number of items;  we use a callback to specify this
 // You can also dynamically add and remove items using this
 static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) {
-    return 7;
+    return 8;
 }
 
 // A callback is used to specify the height of the section header
@@ -76,6 +76,17 @@ static char* decode_snooze(char snoozeMin) {
     }
 }
 
+static char* decode_active_profile(int active_profile) {
+    if (active_profile == ACTIVE_PROFILE_NORMAL) {
+        return _("5/2 with alarm");
+    } else if (active_profile == ACTIVE_PROFILE_NO_ALARM) {
+        return _("no alarm");
+    } else if (active_profile == ACTIVE_PROFILE_ALWAYS_ALARM) {
+        return _("7 days alarm");
+    } else {
+        return _("Unknown");
+    }
+}
 
 // Here we draw what each header is
 //static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
@@ -103,7 +114,10 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
             menu_cell_basic_draw(ctx, cell_layer, _("Snooze"), decode_snooze(get_config()->snooze), NULL);
             break;
         case 6:
-            menu_cell_basic_draw(ctx, cell_layer, _("Version: 1.7"), NULL, NULL);
+            menu_cell_basic_draw(ctx, cell_layer, _("Profile"), decode_active_profile(get_config()->active_profile), NULL);
+            break;
+        case 7:
+            menu_cell_basic_draw(ctx, cell_layer, _("Version: 1.8"), NULL, NULL);
             break;
     }
 }
@@ -113,20 +127,23 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
     float coefd = get_config()->down_coef;
     float coefu = get_config()->up_coef;
     char snooze = get_config()->snooze;
-    
+    int prof = get_config()->active_profile;
+
     switch (cell_index->row) {
         case 0:
             show_alarm_config();
             break;
+
         case 1:
             show_sleep_stats();
             break;
+
         case 2:
             clear_sleep_stats();
             hide_action_menu();
             break;
+
         case 3:
-            
             if (coefd == DOWN_COEF_SLOW) {
                 set_config_down_coef(DOWN_COEF_NORMAL);
             } else if (coefd == DOWN_COEF_NORMAL) {
@@ -138,8 +155,8 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
             }
             menu_layer_reload_data(s_menulayer);
             break;
+
         case 4:
-            
             if (coefu == UP_COEF_NOTSENSITIVE) {
                 set_config_up_coef(UP_COEF_NORMAL);
             } else if (coefu == UP_COEF_NORMAL) {
@@ -151,8 +168,8 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
             }
             menu_layer_reload_data(s_menulayer);
             break;
+
         case 5:
-            
             if (snooze == 0) {
                 set_config_snooze(5);
             } else if (snooze == 5) {
@@ -166,8 +183,20 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
             }
             menu_layer_reload_data(s_menulayer);
             break;
-    
+
         case 6:
+            if (prof == ACTIVE_PROFILE_NORMAL) {
+                set_config_active_profile(ACTIVE_PROFILE_NO_ALARM);
+            } else if (prof == ACTIVE_PROFILE_NO_ALARM) {
+                set_config_active_profile(ACTIVE_PROFILE_ALWAYS_ALARM);
+            } else if (prof == ACTIVE_PROFILE_ALWAYS_ALARM) {
+                set_config_active_profile(ACTIVE_PROFILE_NORMAL);
+            } else {
+                set_config_active_profile(ACTIVE_PROFILE_NORMAL);
+            }
+            break;
+
+        case 7:
             // Do nothing for version
             break;
     }
@@ -176,14 +205,14 @@ void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *da
 static void initialise_ui(void) {
     s_window = window_create();
 
-#ifndef PBL_SDK_3    
+#ifndef PBL_SDK_3
     window_set_fullscreen(s_window, false);
 #endif
 
-    
+
     // s_menulayer
     s_menulayer = menu_layer_create(GRect(0, 0, 144, 152));
-    
+
     // Set all the callbacks for the menu layer
     menu_layer_set_callbacks(s_menulayer, NULL, (MenuLayerCallbacks){
         .get_num_sections = menu_get_num_sections_callback,
@@ -193,7 +222,7 @@ static void initialise_ui(void) {
         .draw_row = menu_draw_row_callback,
         .select_click = menu_select_callback,
     });
-    
+
     menu_layer_set_click_config_onto_window(s_menulayer, s_window);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_menulayer);
 }

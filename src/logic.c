@@ -108,6 +108,9 @@ void set_config_snooze(char snooze) {
     config.snooze  = snooze;
 }
 
+void set_config_active_profile(int profile) {
+    config.active_profile = profile;
+}
 
 void persist_write_config() {
     D("Persist config with up/down : %d/%d", config.up_coef, config.down_coef);
