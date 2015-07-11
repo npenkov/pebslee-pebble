@@ -203,6 +203,26 @@ void in_received_handler(DictionaryIterator *received, void *context) {
             hide_syncprogress_window();
         } else if (command_tupple->value->uint8 == PS_APP_MESSAGE_COMMAND_TOGGLE_SLEEP) {
             toggle_sleep();
+        } else if (command_tupple->value->uint8 == PS_APP_MESSAGE_COMMAND_SET_SETTINGS) {
+
+            show_syncprogress_window();
+
+            Tuple *snoozeT = dict_find(received, PS_APP_TO_WATCH_COMMAND + 1);
+            Tuple *fallAsT = dict_find(received, PS_APP_TO_WATCH_COMMAND + 2);
+            Tuple *sensitivityT = dict_find(received, PS_APP_TO_WATCH_COMMAND + 3);
+            Tuple *profileT = dict_find(received, PS_APP_TO_WATCH_COMMAND + 4);
+            Tuple *vibrateOnSyncT = dict_find(received, PS_APP_TO_WATCH_COMMAND + 5);
+
+            set_config_snooze(snoozeT->value->uint8);
+            set_config_down_coef(fallAsT->value->uint8);
+            set_config_up_coef(sensitivityT->value->uint8);
+            set_config_active_profile(profileT->value->uint8);
+
+            // TODO: Make config param for vibrate on op
+
+            persist_write_config();
+
+            hide_syncprogress_window();
         }
     }
 }

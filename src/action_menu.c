@@ -117,7 +117,7 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
             menu_cell_basic_draw(ctx, cell_layer, _("Profile"), decode_active_profile(get_config()->active_profile), NULL);
             break;
         case 7:
-            menu_cell_basic_draw(ctx, cell_layer, _("Version: 1.8"), NULL, NULL);
+            menu_cell_basic_draw(ctx, cell_layer, _("Version: 1.9"), NULL, NULL);
             break;
     }
 }
