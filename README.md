@@ -21,6 +21,12 @@ for more details visit http://www.pebslee.com/
 
 # Version information
 
+## v.1.8
+
+* Renamed to Pinsleep - requested by Pebble.
+* New profiles (Normal, No alarms, Everyday alarm).
+* Minor bugfixes for sync crashes. 
+
 ## v.1.7
 
 * Snooze function - when active - one click on buttons when alarm - snoozes. Long click - stops alarm
