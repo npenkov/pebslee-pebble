@@ -26,43 +26,6 @@
 #include <stdio.h>
 #include "logic.h"
 
-
-#define CONFIG_PERSISTENT_KEY 0
-
-#define PERSISTENT_COUNT_KEY 1
-#define PERSISTENT_VALUES_KEY 2
-// use 2, 3, 4 - every each with 240 bytes
-
-#define PERSISTENT_START_TIME_KEY 1
-#define PERSISTENT_END_TIME_KEY 2
-#define PERSISTENT_STATS_KEY 3
-
-#define STAT_START 10
-#define STAT_STEP 3
-
-#define MAX_STAT_COUNT 10
-
-// Steps are formed:
-// STAT_START + (stat * STAT_STEP) + PERSISTENT_START_TIME_KEY
-// STAT_START + (stat * STAT_STEP) + PERSISTENT_END_TIME_KEY
-// STAT_START + (stat * STAT_STEP) + PERSISTENT_STATS_KEY
-
-// Max persistem
-#define COUNT_STATS_KEY 100
-#define VERSION_KEY 254
-
-#define MAX_PERSIST_BUFFER 240
-
-typedef struct {
-    uint32_t start_time;
-    uint32_t end_time;
-    uint16_t stat[COUNT_PHASES];
-} StatData;
-
-
-void store_data(SleepData* data);
-void read_last_sleep_data(SleepData *sd);
-
 int count_stat_data();
 StatData** read_stat_data();
 StatData* read_stat_data_rec(int index);

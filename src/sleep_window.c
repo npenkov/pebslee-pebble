@@ -244,7 +244,6 @@ static void handle_window_appear(Window* window) {
  */
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     update_time();
-    minute_timer_tick();
 }
 
 static void up_long_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -293,19 +292,21 @@ static void back_long_click_handler(ClickRecognizerRef recognizer, void *context
 }
 
 static void back_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
-    if (!is_tracking_active()) {
+    // Always can exit the app - we are running in background
+    //if (!is_tracking_active()) {
         hide_sleep_window();
-    } else {
-        ui_click(YES);
-    }
+    //} else {
+    //    ui_click(YES);
+    //}
 }
 
 static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
-    if (!is_tracking_active()) {
+    // Always can exit the app - we are running in background
+    // if (!is_tracking_active()) {
         hide_sleep_window();
-    } else {
-        ui_click(NO);
-    }
+    // } else {
+    //     ui_click(NO);
+    // }
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -347,7 +348,13 @@ static void config_provider(void *context) {
 void show_sleep_window(void) {
     s_res_img_clock_white_22x25 = gbitmap_create_with_resource(RESOURCE_ID_IMG_CLOCK_WHITE_22X25);
     persist_read_config();
-    get_config()->status = STATUS_NOTACTIVE;
+    // Check to see if the worker is currently active
+    bool running = app_worker_is_running();
+    if (running) {
+        get_config()->status = STATUS_ACTIVE;
+    } else {
+        get_config()->status = STATUS_NOTACTIVE;
+    }
 
     initialise_ui();
 

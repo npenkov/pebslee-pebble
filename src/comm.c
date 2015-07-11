@@ -113,7 +113,6 @@ static void send_timer_callback() {
 }
 
 static void send_last_stored_data() {
-    //read_last_sleep_data(get_sleep_data());
     // Generate tuplets
     sendData.countTuplets = count_motion_values();
 
