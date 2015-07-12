@@ -349,8 +349,8 @@ void show_sleep_window(void) {
     s_res_img_clock_white_22x25 = gbitmap_create_with_resource(RESOURCE_ID_IMG_CLOCK_WHITE_22X25);
     persist_read_config();
     // Check to see if the worker is currently active
-    bool running = app_worker_is_running();
-    if (running) {
+    bool worker_is_running = app_worker_is_running();
+    if (worker_is_running) {
         get_config()->status = STATUS_ACTIVE;
     } else {
         get_config()->status = STATUS_NOTACTIVE;
@@ -363,7 +363,7 @@ void show_sleep_window(void) {
         .appear = handle_window_appear
     });
     window_stack_push(s_window, true);
-    if (forceUpdateDate) {
+    if (forceUpdateDate && !worker_is_running) {
         calculate_mode();
     }
     update_mode();
