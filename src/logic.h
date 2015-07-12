@@ -51,6 +51,7 @@ void set_config_up_coef(int coef);
 void set_config_down_coef(int coef);
 void set_config_snooze(char snooze);
 void set_config_active_profile(int profile);
+void set_config_vibrate_on_change(char vibrate);
 
 void persist_write_config();
 void persist_read_config();

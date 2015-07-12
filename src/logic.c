@@ -73,6 +73,10 @@ void set_config_active_profile(int profile) {
     config.active_profile = profile;
 }
 
+void set_config_vibrate_on_change(char vibrate) {
+    config.vibrateOnStatusChange = vibrate;
+}
+
 void persist_write_config() {
     D("Persist config with up/down : %d/%d", config.up_coef, config.down_coef);
 
@@ -300,12 +304,14 @@ void ui_click(bool longClick) {
 
 void notify_status_update(int a_status) {
     if (a_status == STATUS_ACTIVE) {
-        vibes_short_pulse();
+        if (config.vibrateOnStatusChange == YES)
+            vibes_short_pulse();
         start_motion_capturing();
 
         snooze_active = NO;
     } else if (a_status == STATUS_NOTACTIVE) {
-        vibes_double_pulse();
+        if (config.vibrateOnStatusChange == YES)
+            vibes_double_pulse();
         stop_motion_capturing();
 
         if (snooze_active) {

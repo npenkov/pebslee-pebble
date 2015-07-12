@@ -217,8 +217,7 @@ void in_received_handler(DictionaryIterator *received, void *context) {
             set_config_down_coef(fallAsT->value->uint8);
             set_config_up_coef(sensitivityT->value->uint8);
             set_config_active_profile(profileT->value->uint8);
-
-            // TODO: Make config param for vibrate on op
+            set_config_vibrate_on_change(vibrateOnSyncT->value->uint8);
 
             persist_write_config();
 

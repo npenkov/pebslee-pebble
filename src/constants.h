@@ -91,6 +91,9 @@ typedef struct {
     char snooze;
 
     int active_profile;
+
+    char vibrateOnStatusChange;
+    
 } GlobalConfig;
 
 #define PS_APP_TO_WATCH_COMMAND  1
