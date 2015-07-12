@@ -72,8 +72,8 @@ int count_stat_data() {
 
 void store_data(SleepData* data) {
 
-    // Prevent storing empty sleep data
-    if (data->count_values <= 0)
+    // Prevent storing empty sleep data less than 5 min
+    if (data->count_values <= 5)
         return;
 
     // Store first the values
@@ -152,6 +152,8 @@ void stop_sleep_data_capturing() {
 
 
 void main_app_exec_alarm() {
+    worker_launch_app();
+
     // Construct a data packet
     AppWorkerMessage msg_data = {
         .data0 = 0
