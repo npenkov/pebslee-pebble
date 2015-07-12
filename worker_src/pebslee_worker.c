@@ -330,17 +330,31 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     check_alarm();
 }
 
+static void pebslee_app_message_handler(uint16_t type, AppWorkerMessage *data) {
+    if (type == APP_CMD_STOP_CAPTURING) {
+        stop_sleep_data_capturing();
+        store_data(&sleep_data);
+    }
+}
+
 static void init() {
     // Initialize your worker here
     persist_read_config();
+    //app_worker_message_subscribe(pebslee_app_message_handler);
     motion_peek_in_min = 0;
+    start_sleep_data_capturing();
     timer = app_timer_register(ACCEL_STEP_MS, motion_timer_callback, NULL);
     tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 }
 
 static void deinit() {
     // Deinitialize your worker here
+    stop_sleep_data_capturing();
     store_data(&sleep_data);
+
+    app_timer_cancel(timer);
+    tick_timer_service_unsubscribe();
+    //app_worker_message_unsubscribe();
 }
 
 int main(void) {

@@ -122,7 +122,7 @@ static void dump_current_state() {
 #endif
 
 void stop_sleep_data_capturing() {
-    show_sleep_stats();
+    //show_sleep_stats();
 }
 
 void increase_start_hour() {
@@ -260,10 +260,10 @@ void ui_click(bool longClick) {
             stop_snooze_timer();
 
             stop_motion_capturing();
-            stop_sleep_data_capturing();
 
             config.status = STATUS_NOTACTIVE;
             refresh_display();
+            stop_sleep_data_capturing();
         }
     } else {
         if (alarm_in_motion) {
@@ -288,10 +288,10 @@ void ui_click(bool longClick) {
                     stop_snooze_timer();
 
                     stop_motion_capturing();
-                    stop_sleep_data_capturing();
 
                     config.status = STATUS_NOTACTIVE;
                     refresh_display();
+                    stop_sleep_data_capturing();
                 }
             }
         }
@@ -307,12 +307,12 @@ void notify_status_update(int a_status) {
     } else if (a_status == STATUS_NOTACTIVE) {
         vibes_double_pulse();
         stop_motion_capturing();
-        stop_sleep_data_capturing();
 
         if (snooze_active) {
             app_timer_cancel(snooze_timer);
         }
         snooze_active = NO;
+        stop_sleep_data_capturing();
     }
 }
 
@@ -329,6 +329,12 @@ void start_motion_capturing() {
 }
 
 void stop_motion_capturing() {
+    // AppWorkerMessage msg_data = {
+    //     .data0 = 0
+    // };
+    // // Send the data to the background app
+    // app_worker_send_message(APP_CMD_STOP_CAPTURING, &msg_data);
+
     // Stop the background worker
     AppWorkerResult result = app_worker_kill();
 }

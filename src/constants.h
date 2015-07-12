@@ -159,5 +159,6 @@ typedef struct {
 } StatData;
 
 #define WORKER_CMD_EXEC_ALARM 0
+#define APP_CMD_STOP_CAPTURING 100
 
 #endif
