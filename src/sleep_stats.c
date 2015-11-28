@@ -40,9 +40,13 @@ static GFont s_res_gothic_24_bold;
 static TextLayer *s_textlayer_dash;
 static TextLayer *s_tl_to;
 static TextLayer *s_tl_from;
-static BitmapLayer *s_bl_right;
 static TextLayer *s_tl_date;
+
+#if defined(PBL_RECT)
 static BitmapLayer *s_bl_left;
+static BitmapLayer *s_bl_right;
+#endif
+
 static TextLayer *s_tl_total;
 static TextLayer *s_tl_deep;
 static TextLayer *s_tl_light;
@@ -56,13 +60,25 @@ static void initialise_ui(void) {
     window_set_fullscreen(s_window, false);
 #endif
     
+    Layer *window_layer = window_get_root_layer(s_window);
+    GRect b = layer_get_bounds(window_layer);
+
+    int wd = 0;
+    int hd = 0;
+
+#if defined(PBL_ROUND)
+    wd = (b.size.w - 144)/2;
+    hd = (b.size.h - 152)/2;
+#endif
+
     s_res_gothic_18_bold = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
     s_res_img_arrow_right_black_8x14 = gbitmap_create_with_resource(RESOURCE_ID_IMG_ARROW_RIGHT_BLACK_8X14);
     s_res_roboto_condensed_21 = fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21);
     s_res_img_arrow_left_8x14 = gbitmap_create_with_resource(RESOURCE_ID_IMG_ARROW_LEFT_8X14);
     s_res_gothic_24_bold = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+
     // s_textlayer_dash
-    s_textlayer_dash = text_layer_create(GRect(-2, 25, 146, 20));
+    s_textlayer_dash = text_layer_create(GRect(0, 25, b.size.w, 20));
     text_layer_set_background_color(s_textlayer_dash, GColorBlack);
     text_layer_set_text_color(s_textlayer_dash, GColorWhite);
     text_layer_set_text(s_textlayer_dash, " - ");
@@ -70,78 +86,80 @@ static void initialise_ui(void) {
     text_layer_set_font(s_textlayer_dash, s_res_gothic_18_bold);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_textlayer_dash);
     
-    // s_tl_to
-    s_tl_to = text_layer_create(GRect(78, 25, 67, 20));
-    text_layer_set_background_color(s_tl_to, GColorBlack);
-    text_layer_set_text_color(s_tl_to, GColorWhite);
-    text_layer_set_text(s_tl_to, "00:00");
-    text_layer_set_font(s_tl_to, s_res_gothic_18_bold);
-    layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_to);
-    
-    // s_tl_from
-    s_tl_from = text_layer_create(GRect(-1, 25, 64, 20));
-    text_layer_set_background_color(s_tl_from, GColorBlack);
-    text_layer_set_text_color(s_tl_from, GColorWhite);
-    text_layer_set_text(s_tl_from, "00:00");
-    text_layer_set_text_alignment(s_tl_from, GTextAlignmentRight);
-    text_layer_set_font(s_tl_from, s_res_gothic_18_bold);
-    layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_from);
-    
-    // s_bl_right
-    s_bl_right = bitmap_layer_create(GRect(136, 118, 11, 15));
-    bitmap_layer_set_bitmap(s_bl_right, s_res_img_arrow_right_black_8x14);
-    bitmap_layer_set_background_color(s_bl_right, GColorWhite);
-    layer_add_child(window_get_root_layer(s_window), (Layer *)s_bl_right);
-    
     // s_tl_date
-    s_tl_date = text_layer_create(GRect(-1, 0, 145, 25));
+    s_tl_date = text_layer_create(GRect(0, 0, b.size.w, 25));
     text_layer_set_background_color(s_tl_date, GColorBlack);
     text_layer_set_text_color(s_tl_date, GColorWhite);
     text_layer_set_text(s_tl_date, "Xxx 00");
     text_layer_set_text_alignment(s_tl_date, GTextAlignmentCenter);
     text_layer_set_font(s_tl_date, s_res_roboto_condensed_21);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_date);
+
+    // s_tl_from
+    s_tl_from = text_layer_create(GRect(0+wd, 25, 63, 20));
+    text_layer_set_background_color(s_tl_from, GColorBlack);
+    text_layer_set_text_color(s_tl_from, GColorWhite);
+    text_layer_set_text(s_tl_from, "00:00");
+    text_layer_set_text_alignment(s_tl_from, GTextAlignmentRight);
+    text_layer_set_font(s_tl_from, s_res_gothic_18_bold);
+    layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_from);
+
+    // s_tl_to
+    s_tl_to = text_layer_create(GRect(78+wd, 25, 66, 20));
+    text_layer_set_background_color(s_tl_to, GColorBlack);
+    text_layer_set_text_color(s_tl_to, GColorWhite);
+    text_layer_set_text(s_tl_to, "00:00");
+    text_layer_set_font(s_tl_to, s_res_gothic_18_bold);
+    layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_to);
+    
+#if defined(PBL_RECT)
+    // s_bl_right
+    s_bl_right = bitmap_layer_create(GRect(b.size.w - 9, 118, 9, 15));
+    bitmap_layer_set_bitmap(s_bl_right, s_res_img_arrow_right_black_8x14);
+    bitmap_layer_set_background_color(s_bl_right, GColorWhite);
+    layer_add_child(window_get_root_layer(s_window), (Layer *)s_bl_right);
     
     // s_bl_left
-    s_bl_left = bitmap_layer_create(GRect(136, 20, 12, 15));
+    s_bl_left = bitmap_layer_create(GRect(136, 20, 9, 15));
     bitmap_layer_set_bitmap(s_bl_left, s_res_img_arrow_left_8x14);
     bitmap_layer_set_background_color(s_bl_left, GColorBlack);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bl_left);
-    
+#endif    
+
     // s_tl_total
-    s_tl_total = text_layer_create(GRect(1, 50, 71, 20));
+    s_tl_total = text_layer_create(GRect(1+wd, 50+hd, 71, 20));
     text_layer_set_text(s_tl_total, _("TOTAL:"));
     text_layer_set_font(s_tl_total, s_res_gothic_18_bold);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_total);
     
     // s_tl_deep
-    s_tl_deep = text_layer_create(GRect(1, 76, 71, 20));
+    s_tl_deep = text_layer_create(GRect(1+wd, 76+hd, 71, 20));
     text_layer_set_text(s_tl_deep, _("Deep:"));
     text_layer_set_font(s_tl_deep, s_res_gothic_18_bold);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_deep);
     
     // s_tl_light
-    s_tl_light = text_layer_create(GRect(1, 104, 71, 20));
+    s_tl_light = text_layer_create(GRect(1+wd, 104+hd, 71, 20));
     text_layer_set_text(s_tl_light, _("Light:"));
     text_layer_set_font(s_tl_light, s_res_gothic_18_bold);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_light);
     
     // s_tv_total
-    s_tv_total = text_layer_create(GRect(78, 45, 50, 24));
+    s_tv_total = text_layer_create(GRect(78+wd, 45+hd, 50, 24));
     text_layer_set_text(s_tv_total, "00:00");
     text_layer_set_text_alignment(s_tv_total, GTextAlignmentRight);
     text_layer_set_font(s_tv_total, s_res_gothic_24_bold);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tv_total);
     
     // s_tv_deep
-    s_tv_deep = text_layer_create(GRect(78, 72, 50, 24));
+    s_tv_deep = text_layer_create(GRect(78+wd, 72+hd, 50, 24));
     text_layer_set_text(s_tv_deep, "00:00");
     text_layer_set_text_alignment(s_tv_deep, GTextAlignmentRight);
     text_layer_set_font(s_tv_deep, s_res_gothic_24_bold);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tv_deep);
     
     // s_tv_light
-    s_tv_light = text_layer_create(GRect(78, 99, 50, 24));
+    s_tv_light = text_layer_create(GRect(78+wd, 99+hd, 50, 24));
     text_layer_set_text(s_tv_light, "00:00");
     text_layer_set_text_alignment(s_tv_light, GTextAlignmentRight);
     text_layer_set_font(s_tv_light, s_res_gothic_24_bold);
@@ -153,9 +171,11 @@ static void destroy_ui(void) {
     text_layer_destroy(s_textlayer_dash);
     text_layer_destroy(s_tl_to);
     text_layer_destroy(s_tl_from);
+#if defined(PBL_RECT)
     bitmap_layer_destroy(s_bl_right);
-    text_layer_destroy(s_tl_date);
     bitmap_layer_destroy(s_bl_left);
+#endif
+    text_layer_destroy(s_tl_date);
     text_layer_destroy(s_tl_total);
     text_layer_destroy(s_tl_deep);
     text_layer_destroy(s_tl_light);

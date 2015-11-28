@@ -42,13 +42,17 @@ static GBitmap *s_res_img_clock_white_22x25;
 static TextLayer *s_tl_time;
 static TextLayer *s_tl_date;
 static TextLayer *s_tl_status;
-static TextLayer *s_tl_mode;
+#if defined(PBL_RECT)
 static TextLayer *s_textlayer_1;
+static TextLayer *s_tl_mode;
 static BitmapLayer *s_bm_clock;
 static BitmapLayer *s_bm_up_right;
 static BitmapLayer *s_bm_down_right;
 static BitmapLayer *s_bm_back_left;
 static BitmapLayer *s_bm_arrow_right_select;
+#elif defined(PBL_ROUND)
+static TextLayer *s_textlayer_1;
+#endif
 
 static void initialise_ui(void) {
     s_window = window_create();
@@ -58,6 +62,8 @@ static void initialise_ui(void) {
     window_set_fullscreen(s_window, false);
 #endif
 
+    Layer *window_layer = window_get_root_layer(s_window);
+    GRect b = layer_get_bounds(window_layer);
 
     s_res_bitham_42_bold = fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD);
     s_res_roboto_condensed_21 = fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21);
@@ -66,14 +72,14 @@ static void initialise_ui(void) {
     s_res_img_arrow_left_8x14 = gbitmap_create_with_resource(RESOURCE_ID_IMG_ARROW_LEFT_8X14);
     s_res_img_arrow_right_black_8x14 = gbitmap_create_with_resource(RESOURCE_ID_IMG_ARROW_RIGHT_BLACK_8X14);
     // s_tl_time
-    s_tl_time = text_layer_create(GRect(0, 49, 144, 52));
+    s_tl_time = text_layer_create(GRect(0, 49, b.size.w, 52));
     text_layer_set_text(s_tl_time, "00:00");
     text_layer_set_text_alignment(s_tl_time, GTextAlignmentCenter);
     text_layer_set_font(s_tl_time, s_res_bitham_42_bold);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_time);
 
     // s_tl_status
-    s_tl_status = text_layer_create(GRect(0, 126, 144, 26));
+    s_tl_status = text_layer_create(GRect(0, 126, b.size.w, 26));
     text_layer_set_background_color(s_tl_status, GColorClear);
     text_layer_set_text_color(s_tl_status, GColorWhite);
     text_layer_set_text(s_tl_status, _("not tracking"));
@@ -82,20 +88,17 @@ static void initialise_ui(void) {
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_status);
 
     // s_tl_date
-    s_tl_date = text_layer_create(GRect(0, 98, 144, 27));
+    s_tl_date = text_layer_create(GRect(0, 98, b.size.w, 27));
     text_layer_set_text(s_tl_date, "Wed 30");
     text_layer_set_text_alignment(s_tl_date, GTextAlignmentCenter);
     text_layer_set_font(s_tl_date, s_res_roboto_condensed_21);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_date);
 
-    // s_tl_mode
-    s_tl_mode = text_layer_create(GRect(1, 21, 144, 28));
-    text_layer_set_background_color(s_tl_mode, GColorClear);
-    text_layer_set_text_color(s_tl_mode, GColorWhite);
-    text_layer_set_text(s_tl_mode, _("with alarm"));
-    text_layer_set_text_alignment(s_tl_mode, GTextAlignmentCenter);
-    text_layer_set_font(s_tl_mode, s_res_roboto_condensed_21);
-    layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_mode);
+#if defined(PBL_RECT)    
+    // s_bm_clock
+    s_bm_clock = bitmap_layer_create(GRect(0, 0, 22, 26));
+    bitmap_layer_set_bitmap(s_bm_clock, s_res_img_empty_22x25);
+    layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_clock);
 
     // s_textlayer_1
     s_textlayer_1 = text_layer_create(GRect(20, 0, 123, 26));
@@ -106,18 +109,21 @@ static void initialise_ui(void) {
     text_layer_set_font(s_textlayer_1, s_res_roboto_condensed_21);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_textlayer_1);
 
-    // s_bm_clock
-    s_bm_clock = bitmap_layer_create(GRect(0, 0, 22, 26));
-    bitmap_layer_set_bitmap(s_bm_clock, s_res_img_empty_22x25);
-    layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_clock);
-
+    // s_tl_mode
+    s_tl_mode = text_layer_create(GRect(1, 21, b.size.w, 28));
+    text_layer_set_background_color(s_tl_mode, GColorClear);
+    text_layer_set_text_color(s_tl_mode, GColorWhite);
+    text_layer_set_text(s_tl_mode, _("with alarm"));
+    text_layer_set_text_alignment(s_tl_mode, GTextAlignmentCenter);
+    text_layer_set_font(s_tl_mode, s_res_roboto_condensed_21);
+    layer_add_child(window_get_root_layer(s_window), (Layer *)s_tl_mode);
     // s_bm_up_right
-    s_bm_up_right = bitmap_layer_create(GRect(135, 30, 8, 14));
+    s_bm_up_right = bitmap_layer_create(GRect(b.size.w - 9, 30, 8, 14));
     bitmap_layer_set_bitmap(s_bm_up_right, s_res_img_arrow_right_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_up_right);
 
     // s_bm_down_right
-    s_bm_down_right = bitmap_layer_create(GRect(135, 132, 8, 14));
+    s_bm_down_right = bitmap_layer_create(GRect(b.size.w - 9, 132, 8, 14));
     bitmap_layer_set_bitmap(s_bm_down_right, s_res_img_arrow_right_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_down_right);
 
@@ -127,10 +133,20 @@ static void initialise_ui(void) {
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_back_left);
 
     // s_bm_arrow_right_select
-    s_bm_arrow_right_select = bitmap_layer_create(GRect(135, 69, 8, 12));
+    s_bm_arrow_right_select = bitmap_layer_create(GRect(b.size.w - 9, 69, 8, 12));
     bitmap_layer_set_bitmap(s_bm_arrow_right_select, s_res_img_arrow_right_black_8x14);
     bitmap_layer_set_background_color(s_bm_arrow_right_select, GColorWhite);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_arrow_right_select);
+#elif defined(PBL_ROUND)
+    s_textlayer_1 = text_layer_create(GRect(0, 21, b.size.w, 26));
+    text_layer_set_background_color(s_textlayer_1, GColorClear);
+    text_layer_set_text_color(s_textlayer_1, GColorWhite);
+    text_layer_set_text(s_textlayer_1, "00:00 - 00:00");
+    text_layer_set_text_alignment(s_textlayer_1, GTextAlignmentCenter);
+    text_layer_set_font(s_textlayer_1, s_res_roboto_condensed_21);
+    layer_add_child(window_get_root_layer(s_window), (Layer *)s_textlayer_1);    
+#endif
+    
 }
 
 static void destroy_ui(void) {
@@ -138,13 +154,20 @@ static void destroy_ui(void) {
     text_layer_destroy(s_tl_time);
     text_layer_destroy(s_tl_date);
     text_layer_destroy(s_tl_status);
+
+#if defined(PBL_RECT)   
+    bitmap_layer_destroy(s_bm_clock);
     text_layer_destroy(s_tl_mode);
     text_layer_destroy(s_textlayer_1);
-    bitmap_layer_destroy(s_bm_clock);
+
     bitmap_layer_destroy(s_bm_up_right);
     bitmap_layer_destroy(s_bm_down_right);
     bitmap_layer_destroy(s_bm_back_left);
     bitmap_layer_destroy(s_bm_arrow_right_select);
+#elif defined(PBL_ROUND)
+    text_layer_destroy(s_textlayer_1);
+#endif    
+
     gbitmap_destroy(s_res_img_empty_22x25);
     gbitmap_destroy(s_res_img_arrow_right_8x14);
     gbitmap_destroy(s_res_img_arrow_left_8x14);
@@ -155,6 +178,7 @@ static void destroy_ui(void) {
 
 // *********************** Update UI fuctions *********************
 static void update_mode() {
+#if defined(PBL_RECT)       
     if (get_config()->mode == MODE_WEEKEND) {
         text_layer_set_text(s_tl_mode, _("no alarm"));
         bitmap_layer_set_bitmap(s_bm_clock, s_res_img_empty_22x25);
@@ -166,6 +190,15 @@ static void update_mode() {
         snprintf(buffer, sizeof(buffer), "%02d:%02d - %02d:%02d", get_config()->start_wake_hour, get_config()->start_wake_min, get_config()->end_wake_hour, get_config()->end_wake_min);
         text_layer_set_text(s_textlayer_1, buffer);
     }
+#elif defined(PBL_ROUND)   
+    if (get_config()->mode == MODE_WEEKEND) {
+        text_layer_set_text(s_textlayer_1, _("no alarm"));
+    } else if (get_config()->mode == MODE_WORKDAY) {
+        static char buffer[] = "00:00 - 00:00";
+        snprintf(buffer, sizeof(buffer), "%02d:%02d - %02d:%02d", get_config()->start_wake_hour, get_config()->start_wake_min, get_config()->end_wake_hour, get_config()->end_wake_min);
+        text_layer_set_text(s_textlayer_1, buffer);
+    }
+#endif   
 }
 
 static void update_status() {

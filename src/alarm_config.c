@@ -60,87 +60,96 @@ static void initialise_ui(void) {
     window_set_fullscreen(s_window, false);
 #endif
 
+    Layer *window_layer = window_get_root_layer(s_window);
+    GRect b = layer_get_bounds(window_layer);
+    int wd = 0;
+    int hd = 0;
+
+#if defined(PBL_ROUND)
+    wd = (b.size.w - 144)/2;
+    hd = (b.size.h - 152)/2;
+#endif
 
     s_res_bitham_30_black = fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK);
     s_res_img_up_arrow_black_8x14 = gbitmap_create_with_resource(RESOURCE_ID_IMG_UP_ARROW_BLACK_8X14);
     s_res_img_down_arrow_black_8x14 = gbitmap_create_with_resource(RESOURCE_ID_IMG_DOWN_ARROW_BLACK_8X14);
     // s_start_hour
-    s_start_hour = text_layer_create(GRect(21, 27, 44, 38));
+    s_start_hour = text_layer_create(GRect(21+wd, 27+hd, 44, 38));
     text_layer_set_text(s_start_hour, "00");
     text_layer_set_text_alignment(s_start_hour, GTextAlignmentRight);
     text_layer_set_font(s_start_hour, s_res_bitham_30_black);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_start_hour);
 
     // s_start_min
-    s_start_min = text_layer_create(GRect(82, 27, 44, 38));
+    s_start_min = text_layer_create(GRect(82+wd, 27+hd, 44, 38));
     text_layer_set_text(s_start_min, "00");
     text_layer_set_text_alignment(s_start_min, GTextAlignmentRight);
     text_layer_set_font(s_start_min, s_res_bitham_30_black);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_start_min);
 
     // s_end_hour
-    s_end_hour = text_layer_create(GRect(21, 87, 44, 38));
+    s_end_hour = text_layer_create(GRect(21+wd, 87+hd, 44, 38));
     text_layer_set_text(s_end_hour, "00");
     text_layer_set_text_alignment(s_end_hour, GTextAlignmentRight);
     text_layer_set_font(s_end_hour, s_res_bitham_30_black);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_end_hour);
 
     // s_end_min
-    s_end_min = text_layer_create(GRect(82, 87, 44, 38));
+    s_end_min = text_layer_create(GRect(82+wd, 87+hd, 44, 38));
     text_layer_set_text(s_end_min, "00");
     text_layer_set_text_alignment(s_end_min, GTextAlignmentRight);
     text_layer_set_font(s_end_min, s_res_bitham_30_black);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_end_min);
 
     // s_start_sep
-    s_start_sep = text_layer_create(GRect(69, 24, 10, 38));
+    s_start_sep = text_layer_create(GRect(69+wd, 24+hd, 10, 38));
     text_layer_set_text(s_start_sep, ":");
     text_layer_set_font(s_start_sep, s_res_bitham_30_black);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_start_sep);
 
     // s_end_sep
-    s_end_sep = text_layer_create(GRect(69, 85, 10, 38));
+    s_end_sep = text_layer_create(GRect(69+wd, 85+hd, 10, 38));
     text_layer_set_text(s_end_sep, ":");
     text_layer_set_font(s_end_sep, s_res_bitham_30_black);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_end_sep);
 
     // s_bm_st_h_up
-    s_bm_st_h_up = bitmap_layer_create(GRect(36, 19, 14, 8));
+    s_bm_st_h_up = bitmap_layer_create(GRect(36+wd, 19+hd, 14, 8));
     bitmap_layer_set_bitmap(s_bm_st_h_up, s_res_img_up_arrow_black_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_st_h_up);
 
     // s_bm_st_h_down
-    s_bm_st_h_down = bitmap_layer_create(GRect(36, 64, 14, 8));
+    s_bm_st_h_down = bitmap_layer_create(GRect(36+wd, 64+hd, 14, 8));
     bitmap_layer_set_bitmap(s_bm_st_h_down, s_res_img_down_arrow_black_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_st_h_down);
 
     // s_bm_st_m_up
-    s_bm_st_m_up = bitmap_layer_create(GRect(96, 19, 14, 8));
+    s_bm_st_m_up = bitmap_layer_create(GRect(96+wd, 19+hd, 14, 8));
     bitmap_layer_set_bitmap(s_bm_st_m_up, s_res_img_up_arrow_black_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_st_m_up);
 
     // s_bm_st_m_down
-    s_bm_st_m_down = bitmap_layer_create(GRect(96, 64, 14, 8));
+    s_bm_st_m_down = bitmap_layer_create(GRect(96+wd, 64+hd, 14, 8));
     bitmap_layer_set_bitmap(s_bm_st_m_down, s_res_img_down_arrow_black_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_st_m_down);
 
     // s_bm_end_h_down
-    s_bm_end_h_down = bitmap_layer_create(GRect(36, 124, 14, 12));
+    s_bm_end_h_down = bitmap_layer_create(GRect(36+wd, 124+hd, 14, 12));
     bitmap_layer_set_bitmap(s_bm_end_h_down, s_res_img_down_arrow_black_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_end_h_down);
 
     // s_bm_end_m_down
-    s_bm_end_m_down = bitmap_layer_create(GRect(96, 124, 14, 8));
+    s_bm_end_m_down = bitmap_layer_create(GRect(96+wd, 124+hd, 14, 8));
     bitmap_layer_set_bitmap(s_bm_end_m_down, s_res_img_down_arrow_black_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_end_m_down);
 
     // s_bm_end_h_up
-    s_bm_end_h_up = bitmap_layer_create(GRect(36, 79, 14, 8));
+    s_bm_end_h_up = bitmap_layer_create(GRect(36+wd, 79+hd, 14, 8));
     bitmap_layer_set_bitmap(s_bm_end_h_up, s_res_img_up_arrow_black_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_end_h_up);
 
     // s_bm_end_m_up
-    s_bm_end_m_up = bitmap_layer_create(GRect(96, 80, 14, 8));
+    s_bm_end_m_up = bitmap_layer_create(GRect(96+wd, 80+hd, 14, 8));
     bitmap_layer_set_bitmap(s_bm_end_m_up, s_res_img_up_arrow_black_8x14);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bm_end_m_up);
 }

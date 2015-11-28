@@ -21,6 +21,10 @@ for more details visit http://www.pebslee.com/
 
 # Version information
 
+## v.1.10
+
+* Support for Pebble Time Round
+
 ## v.1.8
 
 * Renamed to Pinsleep - requested by Pebble.

@@ -41,9 +41,22 @@ static void initialise_ui(void) {
     window_set_fullscreen(s_window, false);
 #endif
 
+    Layer *window_layer = window_get_root_layer(s_window);
+    GRect b = layer_get_bounds(window_layer);
+
     s_res_img_sync = gbitmap_create_with_resource(RESOURCE_ID_IMG_SYNC_PROGRESS);
     // s_bmp_sync
-    s_bmp_sync = bitmap_layer_create(GRect(0, 0, 144, 168));
+    int wd = 0;
+    int hd = 0;
+
+
+#if defined(PBL_ROUND)
+    wd = (b.size.w - 144)/2;
+    hd = (b.size.h - 168)/2;
+#endif
+
+    s_bmp_sync = bitmap_layer_create(GRect(0+wd, 0+hd, b.size.w, b.size.h));
+
     bitmap_layer_set_bitmap(s_bmp_sync, s_res_img_sync);
     layer_add_child(window_get_root_layer(s_window), (Layer *)s_bmp_sync);
 }
