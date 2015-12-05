@@ -279,33 +279,43 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     update_time();
 }
 
+/*
+ * ==================== Click Handlers ================== 
+ */
+// Long clicks
+
 static void up_long_click_handler(ClickRecognizerRef recognizer, void *context) {
-    ui_click(YES);
 }
 
 static void up_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
-    if (get_config()->mode == MODE_WEEKEND) {
-        set_config_mode(MODE_WORKDAY);
+    if (is_alarm_running()) {
+        ui_click(YES);
     } else {
-        set_config_mode(MODE_WEEKEND);
+        if (get_config()->mode == MODE_WEEKEND) {
+            set_config_mode(MODE_WORKDAY);
+        } else {
+            set_config_mode(MODE_WEEKEND);
+        }
+        notify_mode_update(get_config()->mode);
+        update_mode();
     }
-    notify_mode_update(get_config()->mode);
-    update_mode();
 }
 
 static void down_long_click_handler(ClickRecognizerRef recognizer, void *context) {
-    // Here we can show a window with allowed fuctions or just a status
-    ui_click(YES);
 }
 
 static void down_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
-    if (get_config()->status == STATUS_ACTIVE) {
-        set_config_status(STATUS_NOTACTIVE);
+    if (is_alarm_running()) {
+        ui_click(YES);
     } else {
-        set_config_status(STATUS_ACTIVE);
+        if (get_config()->status == STATUS_ACTIVE) {
+            set_config_status(STATUS_NOTACTIVE);
+        } else {
+            set_config_status(STATUS_ACTIVE);
+        }
+        notify_status_update(get_config()->status);
+        update_status();
     }
-    notify_status_update(get_config()->status);
-    update_status();
 }
 
 
@@ -325,21 +335,13 @@ static void back_long_click_handler(ClickRecognizerRef recognizer, void *context
 }
 
 static void back_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
-    // Always can exit the app - we are running in background
-    //if (!is_tracking_active()) {
-        hide_sleep_window();
-    //} else {
-    //    ui_click(YES);
-    //}
+    hide_sleep_window();
 }
 
+// Short clicks
+
 static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
-    // Always can exit the app - we are running in background
-    // if (!is_tracking_active()) {
-        hide_sleep_window();
-    // } else {
-    //     ui_click(NO);
-    // }
+    hide_sleep_window();
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
