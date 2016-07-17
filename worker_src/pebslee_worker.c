@@ -267,15 +267,16 @@ static void memo_motion(uint16_t peek) {
 }
 
 static void motion_timer_callback(void *data) {
-    AccelData accel = (AccelData ) { .x = 0, .y = 0, .z = 0 };
-    accel_service_peek(&accel);
-
-    // Not interested in values from vibration
-    if (accel.did_vibrate) {
-        // Log 0 to keep the frequency
-        memo_motion(0);
-        return;
+    AccelData accel = (AccelData) { .x = 0, .y = 0, .z = 0 };
+    int res = accel_service_peek(&accel);
+    if (res == -1 || res == -2 || accel.did_vibrate) {
+    	// When accel is not running or already subscribed
+    	// Not interested in values from vibration
+    	// Log 0 to keep the frequency
+		memo_motion(0);
+		return;
     }
+
     int16_t delta_x;
     int16_t delta_y;
     int16_t delta_z;
