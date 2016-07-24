@@ -32,6 +32,10 @@ static void worker_message_handler(uint16_t type, AppWorkerMessage *data) {
     }
 }
 
+static void focus_handler(bool in_focus) {
+    // APP_LOG(APP_LOG_LEVEL_INFO, "App is %s in focus", in_focus ? "now" : "not");
+}
+
 static void handle_init(void) {
     // Migrate DB
     migrate_version();
@@ -50,6 +54,7 @@ static void handle_init(void) {
 
     // Subscribe to Worker messages
     app_worker_message_subscribe(worker_message_handler);
+    app_focus_service_subscribe(focus_handler);
 }
 
 static void handle_deinit(void) {

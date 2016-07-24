@@ -19,6 +19,16 @@ Features include:
 
 for more details visit http://www.pebslee.com/
 
+# Building
+
+use Pebble sdk 3.7 - all the new ones are broken for Pebble and Pebble Steal.
+
+```bash
+pebble sdk install 3.7
+pebble sdk activate 3.7
+pebble clean && pebble build
+```
+
 # Version information
 
 ## v.1.10

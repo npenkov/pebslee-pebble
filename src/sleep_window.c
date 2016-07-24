@@ -282,11 +282,8 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 /*
  * ==================== Click Handlers ================== 
  */
-// Long clicks
-
 static void up_long_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
-
 static void up_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
     if (is_alarm_running()) {
         ui_click(YES);
@@ -300,10 +297,13 @@ static void up_long_click_release_handler(ClickRecognizerRef recognizer, void *c
         update_mode();
     }
 }
+static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+    //ui_click(NO);
+}
+
 
 static void down_long_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
-
 static void down_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
     if (is_alarm_running()) {
         ui_click(YES);
@@ -317,11 +317,13 @@ static void down_long_click_release_handler(ClickRecognizerRef recognizer, void 
         update_status();
     }
 }
+static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
+    //ui_click(NO);
+}
 
 
 static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
-
 static void select_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
     if (!is_alarm_running()) {
         show_action_menu();
@@ -329,36 +331,24 @@ static void select_long_click_release_handler(ClickRecognizerRef recognizer, voi
         ui_click(YES);
     }
 }
+static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+    if (!is_alarm_running()) {
+        show_alarm_config();
+    } 
+    // else {
+    //     ui_click(NO);
+    // }
+}
+
 
 // BACK
 static void back_long_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
-
 static void back_long_click_release_handler(ClickRecognizerRef recognizer, void *context) {
-    hide_sleep_window();
+    //hide_sleep_window();
 }
-
-// Short clicks
-
 static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
     hide_sleep_window();
-}
-
-static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-    ui_click(NO);
-}
-
-static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-    if (!is_alarm_running()) {
-        show_alarm_config();
-    } else {
-        ui_click(NO);
-    }
-}
-
-
-static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-    ui_click(NO);
 }
 
 

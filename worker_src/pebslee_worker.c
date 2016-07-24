@@ -241,6 +241,8 @@ static void calc_and_store_motion_value() {
 
     // Store modified motion data
     sleep_data.minutes_value[sleep_data.count_values] = median_peek;
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Tic-tac: %d %d ", median_peek, motion_peek_in_min);
+    
     // Alternative - store original value
     //sleep_data.minutes_value[sleep_data.count_values] = motion_peek_in_min;
     motion_peek_in_min = 0;
@@ -341,6 +343,7 @@ static void pebslee_app_message_handler(uint16_t type, AppWorkerMessage *data) {
 }
 
 static void init() {
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Init worker");
     // Initialize your worker here
     persist_read_config();
     //app_worker_message_subscribe(pebslee_app_message_handler);
@@ -351,6 +354,7 @@ static void init() {
 }
 
 static void deinit() {
+    // APP_LOG(APP_LOG_LEVEL_DEBUG, "Deinit worker");
     // Deinitialize your worker here
     stop_sleep_data_capturing();
     store_data(&sleep_data);

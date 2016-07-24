@@ -281,6 +281,56 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
     }
 }
 
+static void up_repeat_click_handler(ClickRecognizerRef recognizer, void *context) {
+    bool is_repeating = click_recognizer_is_repeating(recognizer);
+    uint8_t click_count = click_number_of_clicks_counted(recognizer);
+    if (!is_repeating) {
+        up_click_handler(recognizer, context);
+        return;
+    }
+
+    if (current_selection == START_HOUR_SELECTED) {
+        increase_start_hour();
+        set_start_hour();
+    } else if (current_selection == START_MIN_SELECTED) {
+        for (int i = 0; i < 5; i++)
+            increase_start_min();
+        set_start_min();
+    } else if (current_selection == END_HOUR_SELECTED) {
+        increase_end_hour();
+        set_end_hour();
+    } else if (current_selection == END_MIN_SELECTED) {
+        for (int i = 0; i < 5; i++)
+            increase_end_min();
+        set_end_min();
+    }
+}
+
+static void down_repeat_click_handler(ClickRecognizerRef recognizer, void *context) {
+    bool is_repeating = click_recognizer_is_repeating(recognizer);
+    uint8_t click_count = click_number_of_clicks_counted(recognizer);
+    if (!is_repeating) {
+        down_click_handler(recognizer, context);
+        return;
+    }
+
+    if (current_selection == START_HOUR_SELECTED) {
+        decrease_start_hour();
+        set_start_hour();
+    } else if (current_selection == START_MIN_SELECTED) {
+        for (int i = 0; i < 5; i++)
+            decrease_start_min();
+        set_start_min();
+    } else if (current_selection == END_HOUR_SELECTED) {
+        decrease_end_hour();
+        set_end_hour();
+    } else if (current_selection == END_MIN_SELECTED) {
+        for (int i = 0; i < 5; i++)
+            decrease_end_min();
+        set_end_min();
+    }
+}
+
 static void update_end_time_if_necessery() {
     uint8_t starth = get_config()->start_wake_hour;
     uint8_t startm = get_config()->start_wake_min;
@@ -334,10 +384,15 @@ static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void config_provider(void *context) {
-    window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
+    // window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
     window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
-    window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
+    // window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
     window_single_click_subscribe(BUTTON_ID_BACK, back_click_handler);
+
+    uint16_t repeat_interval_ms = 600;  // Fire every 600 ms while held down
+
+    window_single_repeating_click_subscribe(BUTTON_ID_DOWN, repeat_interval_ms, down_repeat_click_handler);
+    window_single_repeating_click_subscribe(BUTTON_ID_UP, repeat_interval_ms, up_repeat_click_handler);
 }
 
 void show_alarm_config(void) {
